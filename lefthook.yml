@@ -1,0 +1,12 @@
+# lefthook.yml — Pre-commit hooks para COMAND-IA
+# Docs: https://github.com/evilmartians/lefthook
+
+pre-commit:
+  parallel: false
+  commands:
+    format:
+      glob: "*.dart"
+      run: dart format --set-exit-if-changed {staged_files}
+    analyze:
+      glob: "*.dart"
+      run: flutter analyze --fatal-warnings

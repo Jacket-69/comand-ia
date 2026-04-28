@@ -1,0 +1,20 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  errors:
+    # Warnings son errores — alineado con DoD del proyecto
+    missing_return: error
+    todo: ignore
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.gr.dart"
+    - "**/*.config.dart"
+    - "**/*.mocks.dart"
+
+linter:
+  rules:
+    # Relax rules que chocan con codegen
+    lines_longer_than_80_chars: false
+    # Permitir print temporalmente (se reemplaza por logger después)
+    avoid_print: warning
