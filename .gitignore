@@ -1,0 +1,91 @@
+# ──────────────── Flutter / Dart ────────────────
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+.fvm/
+pubspec.lock
+**/generated_plugin_registrant.dart
+
+# Build outputs
+*.iml
+*.ipa
+*.apk
+*.aab
+*.app
+
+# Coverage
+coverage/
+*.lcov
+
+# Flutter web specific
+lib/generated_plugin_registrant.dart
+
+# ──────────────── Plataformas ────────────────
+android/app/debug
+android/app/profile
+android/app/release
+android/.gradle/
+android/captures/
+android/local.properties
+android/key.properties
+*.jks
+
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/flutter_export_environment.sh
+
+linux/flutter/ephemeral/
+macos/Flutter/ephemeral/
+windows/flutter/ephemeral/
+web/.dart_tool/
+
+# ──────────────── Codegen (Riverpod, Drift, Freezed) ────────────────
+*.g.dart
+*.freezed.dart
+*.gr.dart
+*.config.dart
+*.mocks.dart
+
+# ──────────────── Secretos y entornos ────────────────
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# ──────────────── IDE / Editor ────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ──────────────── Sistema operativo ────────────────
+Desktop.ini
+ehthumbs.db
+ehthumbs_vista.db
+
+# ──────────────── Misc ────────────────
+*.log
+.cache/
+tmp/
+.tmp/
