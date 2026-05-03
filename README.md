@@ -23,7 +23,7 @@ COMAND-IA reemplaza la libreta del garzón y el cuaderno del dueño con una sola
 
 | | |
 |---|---|
-| **Fase** | Sprint 0 — capa documental cerrada · próximo: Sprint 1 (Fundación) |
+| **Fase** | Sprint 1 — fundación técnica cerrada · próximo: toma de pedido offline |
 | **Hito siguiente** | Avance 2 (2026-05-26) — Capa 1 demoable |
 | **Defensa final** | 2026-07-07 — MVP Capa 1 + Capa 2 |
 | **Equipo** | Benjamín López (PO + Backend) · Fernando Godoy (Frontend + UX) |
@@ -111,6 +111,8 @@ comand-ia/
 
 | Documento | Para qué |
 |---|---|
+| [Estado y handoff](docs/HANDOFF.md) | Qué quedó hecho, cómo levantar el entorno y qué decir en un chat nuevo |
+| [Roadmap](docs/ROADMAP.md) | Orden de sprints, prioridades, tablero GitHub Projects y próximos cortes |
 | [SRS](docs/SRS.md) | Qué hace el sistema (requisitos funcionales + no funcionales mapeados a ISO 25010) |
 | [Architecture](docs/ARCHITECTURE.md) | Cómo está hecho (C4, modelo de datos, RLS, sync offline-first, contratos API) |
 | [Decisiones](docs/decisiones.md) | Por qué se eligió cada cosa (ADRs en formato Nygard compacto) |

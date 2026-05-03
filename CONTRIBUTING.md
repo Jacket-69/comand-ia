@@ -45,6 +45,10 @@ test/COMA-230-add-rls-cross-venue     ← solo tests
 
 `COMA-NNN` = número del issue de GitHub Projects. Sin issue, no hay rama.
 
+El roadmap operativo vive en el GitHub Project **COMAND-IA — Sprints** y se
+resume en [docs/ROADMAP.md](docs/ROADMAP.md). Si el Project y la documentación
+se contradicen, se corrigen ambos en el mismo PR o commit.
+
 ---
 
 ## Conventional Commits (en español)
@@ -241,6 +245,21 @@ Closes COMA-XXX
 | `supabase start` | Levanta Supabase local en Docker |
 | `supabase db reset` | Aplica todas las migraciones desde cero + seed |
 | `supabase gen types --lang dart` | Genera tipos Dart desde schema Postgres |
+
+---
+
+## Retomar trabajo en chat nuevo
+
+Antes de implementar, leer:
+
+1. [docs/HANDOFF.md](docs/HANDOFF.md)
+2. [docs/ROADMAP.md](docs/ROADMAP.md)
+3. [README.md](README.md)
+4. Este archivo
+
+Luego elegir el issue `Todo` más prioritario del GitHub Project que cumpla DoR.
+Si el issue no está listo, actualizar el issue antes de abrir rama. Si el cambio
+resuelve deuda técnica o altera contratos, actualizar docs en el mismo cierre.
 
 ---
 
