@@ -63,10 +63,7 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   /// Login como staff (nombre + PIN).
-  Future<void> loginAsStaff({
-    required String name,
-    required String pin,
-  }) async {
+  Future<void> loginAsStaff({required String name, required String pin}) async {
     state = const AuthLoading();
     try {
       final user = await _repository.loginStaff(name: name, pin: pin);
@@ -84,11 +81,12 @@ class AuthController extends StateNotifier<AuthState> {
 }
 
 /// Provider del AuthController.
-final authControllerProvider =
-    StateNotifierProvider<AuthController, AuthState>((ref) {
-  final repository = ref.watch(authRepositoryProvider);
-  return AuthController(repository);
-});
+final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
+  (ref) {
+    final repository = ref.watch(authRepositoryProvider);
+    return AuthController(repository);
+  },
+);
 
 /// Shortcut: ¿está autenticado?
 final isAuthenticatedProvider = Provider<bool>((ref) {

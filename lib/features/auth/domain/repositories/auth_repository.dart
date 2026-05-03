@@ -16,10 +16,7 @@ abstract class AuthRepository {
   ///
   /// En mock: siempre exitoso si PIN tiene 4-6 dígitos.
   /// En prod: llama a `verify_pin()` SECURITY DEFINER.
-  Future<AppUser> loginStaff({
-    required String name,
-    required String pin,
-  });
+  Future<AppUser> loginStaff({required String name, required String pin});
 
   /// Cierra la sesión y limpia estado local.
   Future<void> logout();

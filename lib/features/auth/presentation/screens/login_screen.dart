@@ -48,10 +48,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final name = _nameController.text.trim();
     final pin = _pinController.text.trim();
     if (name.isEmpty || pin.isEmpty) return;
-    await ref.read(authControllerProvider.notifier).loginAsStaff(
-          name: name,
-          pin: pin,
-        );
+    await ref
+        .read(authControllerProvider.notifier)
+        .loginAsStaff(name: name, pin: pin);
   }
 
   @override
@@ -98,17 +97,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 Text(
                   'COMAND-IA',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.textPrimary,
-                        letterSpacing: 1.5,
-                      ),
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimary,
+                    letterSpacing: 1.5,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Sistema de Comandas',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 40),
 
@@ -116,9 +115,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(
-                      AppTheme.borderRadius,
-                    ),
+                    borderRadius: BorderRadius.circular(AppTheme.borderRadius),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.05),
@@ -144,10 +141,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         icon: Icon(Icons.admin_panel_settings),
                         text: 'Administrador',
                       ),
-                      Tab(
-                        icon: Icon(Icons.person),
-                        text: 'Garzón',
-                      ),
+                      Tab(icon: Icon(Icons.person), text: 'Garzón'),
                     ],
                   ),
                 ),
@@ -174,26 +168,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     builder: (context, _) {
                       return AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
-                        child: _tabController.index == 0
-                            ? _OwnerForm(
-                                key: const ValueKey('owner'),
-                                emailController: _emailController,
-                                isLoading: isLoading,
-                                onSubmit: _loginAsOwner,
-                              )
-                            : _StaffForm(
-                                key: const ValueKey('staff'),
-                                nameController: _nameController,
-                                pinController: _pinController,
-                                obscurePin: _obscurePin,
-                                isLoading: isLoading,
-                                onToggleObscure: () {
-                                  setState(() {
-                                    _obscurePin = !_obscurePin;
-                                  });
-                                },
-                                onSubmit: _loginAsStaff,
-                              ),
+                        child:
+                            _tabController.index == 0
+                                ? _OwnerForm(
+                                  key: const ValueKey('owner'),
+                                  emailController: _emailController,
+                                  isLoading: isLoading,
+                                  onSubmit: _loginAsOwner,
+                                )
+                                : _StaffForm(
+                                  key: const ValueKey('staff'),
+                                  nameController: _nameController,
+                                  pinController: _pinController,
+                                  obscurePin: _obscurePin,
+                                  isLoading: isLoading,
+                                  onToggleObscure: () {
+                                    setState(() {
+                                      _obscurePin = !_obscurePin;
+                                    });
+                                  },
+                                  onSubmit: _loginAsStaff,
+                                ),
                       );
                     },
                   ),
@@ -262,16 +257,16 @@ class _OwnerForm extends StatelessWidget {
       children: [
         Text(
           'Acceso Administrador',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         Text(
           'Ingresa tu email para recibir un magic link.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
         ),
         const SizedBox(height: 24),
         TextField(
@@ -288,16 +283,17 @@ class _OwnerForm extends StatelessWidget {
         const SizedBox(height: 24),
         ElevatedButton.icon(
           onPressed: isLoading ? null : onSubmit,
-          icon: isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Icon(Icons.send),
+          icon:
+              isLoading
+                  ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                  : const Icon(Icons.send),
           label: Text(isLoading ? 'Enviando...' : 'Enviar Magic Link'),
         ),
       ],
@@ -333,16 +329,16 @@ class _StaffForm extends StatelessWidget {
       children: [
         Text(
           'Acceso Garzón',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         Text(
           'Ingresa tu nombre y PIN para comenzar.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
         ),
         const SizedBox(height: 24),
         TextField(
@@ -370,9 +366,7 @@ class _StaffForm extends StatelessWidget {
             hintText: '••••',
             prefixIcon: const Icon(Icons.lock_outline),
             suffixIcon: IconButton(
-              icon: Icon(
-                obscurePin ? Icons.visibility_off : Icons.visibility,
-              ),
+              icon: Icon(obscurePin ? Icons.visibility_off : Icons.visibility),
               onPressed: onToggleObscure,
             ),
           ),
@@ -380,16 +374,17 @@ class _StaffForm extends StatelessWidget {
         const SizedBox(height: 24),
         ElevatedButton.icon(
           onPressed: isLoading ? null : onSubmit,
-          icon: isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Icon(Icons.login),
+          icon:
+              isLoading
+                  ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                  : const Icon(Icons.login),
           label: Text(isLoading ? 'Entrando...' : 'Entrar'),
         ),
       ],

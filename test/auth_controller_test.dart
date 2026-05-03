@@ -24,6 +24,15 @@ void main() {
       final state = controller.state as AuthAuthenticated;
       expect(state.user.email, 'test@restaurant.cl');
       expect(state.user.role, UserRole.owner);
+      expect(state.user.isOwner, isTrue);
+      expect(state.user.isStaff, isFalse);
+      expect(state.user.props, [
+        state.user.id,
+        state.user.email,
+        state.user.role,
+        state.user.venueId,
+        state.user.displayName,
+      ]);
     });
 
     test('loginAsStaff cambia estado a AuthAuthenticated', () async {
@@ -33,6 +42,8 @@ void main() {
       final state = controller.state as AuthAuthenticated;
       expect(state.user.displayName, 'Carlos');
       expect(state.user.role, UserRole.staff);
+      expect(state.user.isOwner, isFalse);
+      expect(state.user.isStaff, isTrue);
     });
 
     test('loginAsStaff con PIN corto da error', () async {
