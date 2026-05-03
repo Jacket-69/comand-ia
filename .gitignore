@@ -7,7 +7,6 @@
 .pub/
 build/
 .fvm/
-pubspec.lock
 **/generated_plugin_registrant.dart
 
 # Build outputs
@@ -22,7 +21,6 @@ coverage/
 *.lcov
 
 # Flutter web specific
-lib/generated_plugin_registrant.dart
 
 # ──────────────── Plataformas ────────────────
 android/app/debug

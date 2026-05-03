@@ -30,8 +30,35 @@ jobs:
       - name: Correr tests con cobertura
         run: flutter test --coverage
 
+      - name: Verificar umbrales de cobertura
+        run: dart run tool/check_coverage.dart coverage/lcov.info --global-min=60 --domain-min=70
+
+      - name: Buscar secretos hardcodeados
+        run: |
+          ! git grep -nE 'BEGIN (RSA|OPENSSH|PRIVATE) KEY|sk-[A-Za-z0-9]{20,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}' -- ':!pubspec.lock'
+
       - name: Subir cobertura a Codecov
         uses: codecov/codecov-action@v4
         with:
           files: coverage/lcov.info
         continue-on-error: true
+
+  supabase-schema:
+    name: Migraciones Supabase
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Levantar Supabase local
+        run: supabase start
+
+      - name: Aplicar migraciones y seed
+        run: supabase db reset
+
+      - name: Correr tests SQL pgTAP
+        run: supabase test db
