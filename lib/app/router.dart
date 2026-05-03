@@ -48,20 +48,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'tables',
         builder: (context, state) => const TableGridScreen(),
       ),
-      // Placeholder para rutas futuras
+      GoRoute(
+        path: AppRoutes.order,
+        name: 'order',
+        builder: (context, state) {
+          final tableId = state.pathParameters['tableId'] ?? '';
+          return Scaffold(
+            body: Center(child: Text('Pedido mesa $tableId - Sprint 2')),
+          );
+        },
+      ),
       GoRoute(
         path: AppRoutes.kitchen,
         name: 'kitchen',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('KDS Cocina — Sprint 2')),
-        ),
+        builder:
+            (context, state) => const Scaffold(
+              body: Center(child: Text('KDS Cocina — Sprint 2')),
+            ),
       ),
       GoRoute(
         path: AppRoutes.dashboard,
         name: 'dashboard',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Dashboard — Sprint 2')),
-        ),
+        builder:
+            (context, state) => const Scaffold(
+              body: Center(child: Text('Dashboard — Sprint 2')),
+            ),
       ),
     ],
   );

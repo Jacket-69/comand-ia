@@ -2,6 +2,7 @@ import 'package:comand_ia/app/theme.dart';
 import 'package:comand_ia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// Estado de una mesa del local.
 enum TableStatus {
@@ -59,11 +60,7 @@ final mockTables = [
     guestCount: 4,
     orderTotal: 32500,
   ),
-  const TableData(
-    id: '2',
-    number: 2,
-    status: TableStatus.available,
-  ),
+  const TableData(id: '2', number: 2, status: TableStatus.available),
   const TableData(
     id: '3',
     number: 3,
@@ -72,16 +69,8 @@ final mockTables = [
     guestCount: 2,
     orderTotal: 18000,
   ),
-  const TableData(
-    id: '4',
-    number: 4,
-    status: TableStatus.available,
-  ),
-  const TableData(
-    id: '5',
-    number: 5,
-    status: TableStatus.reserved,
-  ),
+  const TableData(id: '4', number: 4, status: TableStatus.available),
+  const TableData(id: '5', number: 5, status: TableStatus.reserved),
   const TableData(
     id: '6',
     number: 6,
@@ -90,16 +79,8 @@ final mockTables = [
     guestCount: 6,
     orderTotal: 54000,
   ),
-  const TableData(
-    id: '7',
-    number: 7,
-    status: TableStatus.available,
-  ),
-  const TableData(
-    id: '8',
-    number: 8,
-    status: TableStatus.available,
-  ),
+  const TableData(id: '7', number: 7, status: TableStatus.available),
+  const TableData(id: '8', number: 8, status: TableStatus.available),
   const TableData(
     id: '9',
     number: 9,
@@ -108,21 +89,9 @@ final mockTables = [
     guestCount: 3,
     orderTotal: 27000,
   ),
-  const TableData(
-    id: '10',
-    number: 10,
-    status: TableStatus.available,
-  ),
-  const TableData(
-    id: '11',
-    number: 11,
-    status: TableStatus.reserved,
-  ),
-  const TableData(
-    id: '12',
-    number: 12,
-    status: TableStatus.available,
-  ),
+  const TableData(id: '10', number: 10, status: TableStatus.available),
+  const TableData(id: '11', number: 11, status: TableStatus.reserved),
+  const TableData(id: '12', number: 12, status: TableStatus.available),
   const TableData(
     id: '13',
     number: 13,
@@ -131,11 +100,7 @@ final mockTables = [
     guestCount: 2,
     orderTotal: 15000,
   ),
-  const TableData(
-    id: '14',
-    number: 14,
-    status: TableStatus.available,
-  ),
+  const TableData(id: '14', number: 14, status: TableStatus.available),
   const TableData(
     id: '15',
     number: 15,
@@ -144,26 +109,10 @@ final mockTables = [
     guestCount: 5,
     orderTotal: 42000,
   ),
-  const TableData(
-    id: '16',
-    number: 16,
-    status: TableStatus.available,
-  ),
-  const TableData(
-    id: '17',
-    number: 17,
-    status: TableStatus.available,
-  ),
-  const TableData(
-    id: '18',
-    number: 18,
-    status: TableStatus.reserved,
-  ),
-  const TableData(
-    id: '19',
-    number: 19,
-    status: TableStatus.available,
-  ),
+  const TableData(id: '16', number: 16, status: TableStatus.available),
+  const TableData(id: '17', number: 17, status: TableStatus.available),
+  const TableData(id: '18', number: 18, status: TableStatus.reserved),
+  const TableData(id: '19', number: 19, status: TableStatus.available),
   const TableData(
     id: '20',
     number: 20,
@@ -186,9 +135,10 @@ class TableGridScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final size = MediaQuery.sizeOf(context);
-    final crossAxisCount = size.width > 900
-        ? 5
-        : size.width > 600
+    final crossAxisCount =
+        size.width > 900
+            ? 5
+            : size.width > 600
             ? 4
             : 3;
 
@@ -202,9 +152,9 @@ class TableGridScreen extends ConsumerWidget {
             if (user != null)
               Text(
                 'Hola, ${user.displayName} 👋',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
               ),
           ],
         ),
@@ -221,18 +171,19 @@ class TableGridScreen extends ConsumerWidget {
                 ref.read(authControllerProvider.notifier).logout();
               }
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, size: 20, color: AppTheme.error),
-                    SizedBox(width: 8),
-                    Text('Cerrar sesión'),
-                  ],
-                ),
-              ),
-            ],
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout, size: 20, color: AppTheme.error),
+                        SizedBox(width: 8),
+                        Text('Cerrar sesión'),
+                      ],
+                    ),
+                  ),
+                ],
           ),
         ],
       ),
@@ -257,23 +208,26 @@ class TableGridScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _StatBadge(
-                  count: mockTables
-                      .where((t) => t.status == TableStatus.available)
-                      .length,
+                  count:
+                      mockTables
+                          .where((t) => t.status == TableStatus.available)
+                          .length,
                   label: 'Libres',
                   color: AppTheme.tableAvailable,
                 ),
                 _StatBadge(
-                  count: mockTables
-                      .where((t) => t.status == TableStatus.withOrder)
-                      .length,
+                  count:
+                      mockTables
+                          .where((t) => t.status == TableStatus.withOrder)
+                          .length,
                   label: 'Con Orden',
                   color: AppTheme.tableWithOrder,
                 ),
                 _StatBadge(
-                  count: mockTables
-                      .where((t) => t.status == TableStatus.reserved)
-                      .length,
+                  count:
+                      mockTables
+                          .where((t) => t.status == TableStatus.reserved)
+                          .length,
                   label: 'Reservadas',
                   color: AppTheme.tableReserved,
                 ),
@@ -304,20 +258,11 @@ class TableGridScreen extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _LegendDot(
-                  color: AppTheme.dotWithOrder,
-                  label: 'Con Pedido',
-                ),
+                _LegendDot(color: AppTheme.dotWithOrder, label: 'Con Pedido'),
                 const SizedBox(width: 16),
-                _LegendDot(
-                  color: AppTheme.dotWaitingOrder,
-                  label: 'Esperando',
-                ),
+                _LegendDot(color: AppTheme.dotWaitingOrder, label: 'Esperando'),
                 const SizedBox(width: 16),
-                _LegendDot(
-                  color: AppTheme.dotReadyToServe,
-                  label: 'Listo',
-                ),
+                _LegendDot(color: AppTheme.dotReadyToServe, label: 'Listo'),
               ],
             ),
           ),
@@ -366,9 +311,9 @@ class _StatBadge extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
         ),
       ],
     );
@@ -421,14 +366,7 @@ class _TableCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          // TODO(sprint-2): Navegar a /order/:tableId
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Mesa ${table.number} seleccionada'),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 1),
-            ),
-          );
+          context.go('/order/${table.id}');
         },
         borderRadius: BorderRadius.circular(AppTheme.borderRadius),
         child: AnimatedContainer(
@@ -518,10 +456,7 @@ class _TableCard extends StatelessWidget {
 }
 
 class _LegendDot extends StatelessWidget {
-  const _LegendDot({
-    required this.color,
-    required this.label,
-  });
+  const _LegendDot({required this.color, required this.label});
 
   final Color color;
   final String label;
@@ -534,17 +469,14 @@ class _LegendDot extends StatelessWidget {
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
         ),
       ],
     );
