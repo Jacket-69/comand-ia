@@ -155,7 +155,7 @@ features/<feature>/
 |---|---|
 | `AuthRepository` (interfaz) | Contrato de autenticación |
 | `SupabaseAuthDataSource` | Magic link email via Supabase Auth |
-| `PinAuthDataSource` | Llama a RPC `verify_pin(venue_id, pin)` SECURITY DEFINER |
+| `PinAuthDataSource` | Llama a RPC `verify_pin(venue_id, pin, display_name)` SECURITY DEFINER |
 | `AuthController` (Riverpod) | Estado de sesión; expone `User?` al árbol de widgets |
 | `LoginScreen` | Pantalla con dos flows: magic link (owner) y PIN (garzón) |
 
@@ -209,13 +209,13 @@ features/<feature>/
 | Tabla | Columnas clave | Notas |
 |---|---|---|
 | `venue` | `id` (uuid PK), `name`, `owner_id` (fk auth.users), `settings` (jsonb), `created_at` | Tenant raíz. Una fila = un local. |
-| `app_user` | `id` (= auth.users.id), `email`, `role` (owner\|staff), `venue_id` (nullable), `display_name`, `created_at` | `venue_id` null solo en la primera fracción del onboarding antes de asignar venue. |
-| `staff_pin` | `id`, `venue_id`, `app_user_id`, `pin_hash`, `failed_attempts`, `locked_until` | `pin_hash` via argon2/pgcrypto. SELECT bloqueado por RLS; solo `verify_pin()` SECURITY DEFINER. |
+| `app_user` | `id` (= auth.users.id), `email`, `role` (owner\|staff), `venue_id`, `display_name`, `created_at` | El owner crea primero `venue` y luego su `app_user` asociado en el onboarding. |
+| `staff_pin` | `id`, `venue_id`, `app_user_id`, `pin_hash`, `failed_attempts`, `locked_until` | `pin_hash` via `pgcrypto.crypt()`. SELECT bloqueado por RLS; solo `verify_pin()` SECURITY DEFINER. |
 | `menu_category` | `id`, `venue_id`, `name`, `sort_order`, `active`, `updated_at` | |
 | `menu_item` | `id`, `venue_id`, `category_id`, `name`, `price_cents` (int), `active`, `image_url`, `updated_at` | Precio en centavos (no float). |
 | `dining_table` | `id`, `venue_id`, `label`, `capacity`, `active`, `updated_at` | Renombrado desde `table` para evitar colisión SQL. |
 | `customer_order` | `id`, `venue_id`, `dining_table_id`, `status` (open\|sent\|preparing\|ready\|closed\|cancelled), `opened_by`, `opened_at`, `closed_at`, `total_cents`, `payment_method`, `notes`, `updated_at` | `total_cents` calculado por trigger; el cliente nunca lo escribe. |
-| `order_item` | `id`, `order_id`, `menu_item_id`, `name_snapshot`, `price_cents_snapshot`, `quantity`, `comments`, `status`, `updated_at` | Snapshots inmutables al INSERT: el precio y nombre del ítem no cambian aunque se edite el menú. |
+| `order_item` | `id`, `venue_id`, `order_id`, `menu_item_id`, `name_snapshot`, `price_cents_snapshot`, `quantity`, `comments`, `status`, `updated_at` | Snapshots inmutables al INSERT: el precio y nombre del ítem no cambian aunque se edite el menú. |
 | `pending_op` | `id`, `venue_id`, `op_type`, `payload` (jsonb), `created_at`, `attempts` | Local-only (Drift). Cola FIFO de sincronización. No existe en Supabase. |
 | `audit_log` | `id`, `venue_id`, `app_user_id`, `action`, `entity`, `entity_id`, `diff` (jsonb), `at` | Trazabilidad mínima de mutaciones importantes. |
 
@@ -250,19 +250,13 @@ END;
 $$;
 
 -- verify_pin: valida PIN sin exponer pin_hash al cliente
-CREATE OR REPLACE FUNCTION verify_pin(p_venue_id uuid, p_pin text)
-RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE
-  v_user_id uuid;
-BEGIN
-  SELECT sp.app_user_id INTO v_user_id
-  FROM staff_pin sp
-  WHERE sp.venue_id = p_venue_id
-    AND (sp.locked_until IS NULL OR sp.locked_until < now())
-    AND pgcrypto.crypt(p_pin, sp.pin_hash) = sp.pin_hash;
-  RETURN v_user_id; -- NULL si PIN incorrecto o bloqueado
-END;
-$$;
+CREATE OR REPLACE FUNCTION verify_pin(
+  p_venue_id uuid,
+  p_pin text,
+  p_display_name text DEFAULT NULL
+)
+RETURNS TABLE(user_id uuid, display_name text, auth_status pin_auth_status)
+LANGUAGE plpgsql SECURITY DEFINER AS $$ ... $$;
 ```
 
 ---
@@ -277,20 +271,18 @@ Toda tabla con `venue_id` tiene RLS habilitada. La policy genérica es:
 -- Patrón aplicado a cada tabla con venue_id
 CREATE POLICY "venue_isolation" ON <tabla>
   USING (
-    venue_id IN (
-      SELECT venue_id FROM app_user WHERE id = auth.uid()
-    )
+    venue_id = current_venue_id()
   );
 ```
 
-Ninguna tabla permite acceso sin policy explícita. Si una tabla nueva se agrega sin policy, todas las queries retornan 0 filas (deny-by-default de Postgres cuando RLS está habilitada).
+`current_venue_id()` es una función `SECURITY DEFINER` que consulta `app_user` sin disparar recursión de policies. Ninguna tabla permite acceso sin policy explícita. Si una tabla nueva se agrega sin policy, todas las queries retornan 0 filas (deny-by-default de Postgres cuando RLS está habilitada).
 
 ### Casos especiales
 
 | Tabla | Policy especial |
 |---|---|
-| `staff_pin` | SELECT bloqueado completamente. Lectura solo via `verify_pin()` SECURITY DEFINER. Prevents que el cliente vea `pin_hash`. |
-| `venue` | El owner solo ve su propio venue (`id = auth.uid()` owner). |
+| `staff_pin` | SELECT bloqueado completamente. Lectura solo via `verify_pin()` SECURITY DEFINER para evitar exponer `pin_hash`. |
+| `venue` | El owner puede crear y ver venues donde `owner_id = auth.uid()`. |
 | `audit_log` | INSERT desde SECURITY DEFINER trigger. SELECT solo para owner del venue. |
 
 ### Audit nightly con pgTAP
@@ -384,7 +376,7 @@ Este archivo es generado automáticamente y no se edita a mano. Se regenera en C
 
 | RPC | Inputs | Output | Notas |
 |---|---|---|---|
-| `verify_pin(venue_id, pin)` | uuid, text | uuid \| null | SECURITY DEFINER. Retorna `app_user.id` si PIN válido, null si no. |
+| `verify_pin(venue_id, pin, display_name)` | uuid, text, text opcional | `{user_id, display_name, auth_status}` | SECURITY DEFINER. Retorna `valid`, `invalid` o `blocked`; bloquea tras 5 intentos fallidos. |
 | `dashboard_kpis(venue_id, period)` | uuid, text ('today'\|'7d'\|'30d') | jsonb | Capa 2. Agrega ventas, top items, ticket promedio, hora pico. |
 
 ### Realtime channels
@@ -416,9 +408,8 @@ Las migraciones viven en `supabase/migrations/` con numeración ascendente:
 ```
 supabase/migrations/
 ├── 0001_init.sql           # tablas base + RLS + triggers
-├── 0002_staff_pin.sql      # verify_pin SECURITY DEFINER
-├── 0003_audit_log.sql      # audit_log + trigger
-└── ...
+├── 0001_init.sql           # schema base + RLS + triggers + RPCs MVP
+└── 0002_...sql             # cambios forward-only futuros
 ```
 
 **Política:**
@@ -509,7 +500,7 @@ Definidas en `.env.example` (versionado). El archivo `.env.development.local` es
 | ACID-3 | `customer_order.total_cents` es derivado. El trigger `compute_order_total()` lo recalcula. El cliente nunca escribe este campo directamente. |
 | ACID-4 | `status = 'closed'` es terminal. Un trigger bloquea cualquier UPDATE de items, total o método de pago en un pedido cerrado. |
 | ACID-5 | Toda tabla pública con `venue_id` tiene RLS habilitada y al menos una policy USING. Verificado en CI con pgTAP. |
-| ACID-6 | El PIN nunca viaja en texto plano. El cliente solo llama `verify_pin(venue_id, pin)` SECURITY DEFINER. La columna `pin_hash` no es seleccionable desde el cliente. |
+| ACID-6 | El PIN no se persiste ni registra en texto plano. El cliente solo llama `verify_pin(venue_id, pin, display_name)` por TLS; la columna `pin_hash` no es seleccionable desde el cliente. |
 | ACID-7 | `pending_op` es FIFO estricto por `venue_id`. El `SyncService` no reordena las operaciones pendientes. |
 
 ### SOLID en Flutter

@@ -50,7 +50,7 @@ La arquitectura ya soporta Capa 3 (multi-tenant + RLS) — queda fuera del MVP a
 | **Multi-tenant** | Shared DB + RLS deny-by-default por `venue_id` |
 | **Hosting** | Vercel (web preview por PR) + builds nativos Android/iOS |
 | **Observabilidad** | Sentry + Supabase logs |
-| **CI** | GitHub Actions (lint + format + tests) |
+| **CI** | GitHub Actions (format + analyze + tests + cobertura + secret scan + Supabase/pgTAP) |
 | **Licencia** | AGPL-3.0 |
 
 ## Quickstart
@@ -87,13 +87,11 @@ comand-ia/
 │   ├── app/                # bootstrap, router, theme
 │   ├── core/               # cross-cutting: env, errors, logging
 │   └── features/           # vertical slices (data + domain + presentation)
-│       ├── auth/
-│       ├── menu/
-│       ├── orders/         # toma de pedido + sync queue
-│       ├── kitchen/        # KDS realtime
-│       └── analytics/      # dashboard Capa 2
-├── test/                   # unit + widget
-├── integration_test/       # flujos end-to-end
+│       ├── auth/           # implementado: login mock + contrato
+│       └── orders/         # implementado: grid inicial de mesas
+│       # Próximo: menu/, kitchen/, analytics/
+├── test/                   # unit + widget actuales
+├── tool/                   # utilidades de CI local
 ├── supabase/
 │   ├── migrations/         # SQL forward-only
 │   ├── seed.sql
@@ -104,6 +102,10 @@ comand-ia/
 │   └── decisiones.md       # ADRs compactos
 └── .github/workflows/      # CI
 ```
+
+> La estructura documenta el estado actual del repo y el crecimiento esperado.
+> `menu/`, `kitchen/`, `analytics/` e `integration_test/` se agregan cuando
+> entren sus historias al sprint, no como carpetas vacías.
 
 ## Documentación
 

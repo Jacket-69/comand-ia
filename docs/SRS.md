@@ -114,7 +114,7 @@ Formato: `id | descripción imperativa | criterio de verificación`.
 | RF-AUTH-001 | El sistema envía un magic link al email del owner cuando este solicita acceso. | El usuario recibe el correo en ≤60s y el link expira en 24h. |
 | RF-AUTH-002 | El sistema autentica a un garzón con su nombre y PIN de 4-6 dígitos asociado al venue. | PIN correcto retorna sesión de garzón; PIN incorrecto no. |
 | RF-AUTH-003 | El sistema bloquea la autenticación por PIN tras 5 intentos fallidos consecutivos para el mismo usuario. | El 6° intento retorna error bloqueado aunque el PIN sea correcto. |
-| RF-AUTH-004 | El sistema almacena el PIN hasheado con argon2/pgcrypto; nunca en texto plano. | La columna `pin_hash` no contiene el PIN original; solo `verify_pin()` SECURITY DEFINER lo valida. |
+| RF-AUTH-004 | El sistema almacena el PIN hasheado con `pgcrypto.crypt()`; nunca persistido en texto plano. | La columna `pin_hash` no contiene el PIN original; solo `verify_pin()` SECURITY DEFINER lo valida. |
 | RF-AUTH-005 | El owner puede invitar a un garzón creando un perfil con nombre y PIN en el panel de administración. | El garzón nuevo puede autenticarse con ese PIN en el mismo venue. |
 | RF-AUTH-006 | El sistema cierra sesión y limpia el estado local al hacer logout explícito. | Después del logout, navegar a ruta protegida redirige al login. |
 
@@ -216,7 +216,7 @@ Formato: `id | descripción imperativa | criterio de verificación`.
 |---|---|---|
 | RNF-SEC-001 | Toda tabla con `venue_id` tiene RLS habilitada y al menos una policy USING. | Test pgTAP valida `pg_policies` en nightly. |
 | RNF-SEC-002 | Un usuario de venue B no puede leer ni escribir datos de venue A. | Test SQL cross-venue en pgTAP: 0 filas retornadas con token de venue B. |
-| RNF-SEC-003 | El PIN de garzón nunca viaja en texto plano; solo se valida via `verify_pin()` SECURITY DEFINER. | Code review: ningún query directo sobre `pin_hash` en el cliente. |
+| RNF-SEC-003 | El PIN de garzón no se persiste ni registra en texto plano; se envía por TLS y se valida via `verify_pin()` SECURITY DEFINER. | Code review: ningún query directo sobre `pin_hash` en el cliente ni logging del PIN. |
 | RNF-SEC-004 | No hay secretos (tokens, claves) hardcodeados en el código fuente. | `git grep` en CI sobre patrones comunes de credenciales. Sentry alerta si detecta key leak. |
 | RNF-SEC-005 | Las migraciones SQL son forward-only en MVP. | Política documentada en [ARCHITECTURE.md](ARCHITECTURE.md); rollback manual si se necesita. |
 
