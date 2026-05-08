@@ -1,7 +1,6 @@
 # SRS — COMAND-IA
 
-> Documento de requisitos del sistema. Sigue la estructura IEEE 29148.  
-> Calidad mapeada a **ISO/IEC 25010:2011**.
+> Documento de requisitos del sistema. Estructura **IEEE 29148**. Calidad mapeada a **ISO/IEC 25010:2011**.
 
 ---
 
@@ -11,42 +10,31 @@
 
 Este documento especifica los requisitos funcionales y no funcionales de **COMAND-IA**, una aplicación multiplataforma de comandas y analítica para locales gastronómicos micro. Sirve como contrato entre el equipo de desarrollo y los evaluadores académicos del ramo Electivo Profesional (ICCI, UCEN 2026-S1).
 
+Para la motivación del producto y los usuarios objetivo ver [product/vision.md](../product/vision.md). Para el lenguaje del dominio ver [product/glossary.md](../product/glossary.md).
+
 ### 1.2 Alcance MVP
 
 El MVP cubre **Capa 1 (Operación)** y **Capa 2 (Analítica)**:
 
 | Capa | Alcance |
 |---|---|
-| **1 — Operación** | Toma de pedido offline-first, KDS realtime, cierre de cuenta |
-| **2 — Analítica** | Dashboard owner: KPIs de ventas, top items, ticket promedio, hora pico |
+| **1 — Operación** | Toma de pedido offline-first, KDS realtime, cierre de cuenta. |
+| **2 — Analítica** | Dashboard owner: KPIs de ventas, top items, ticket promedio, hora pico. |
 | **3 — Turismo regional B2G** | Fuera del MVP. Roadmap v2. La arquitectura ya lo soporta. |
 
-La arquitectura soporta multi-tenant (múltiples locales en la misma base de datos) desde el Sprint 1 por diseño, pero el onboarding de múltiples venues es Capa 3.
+La arquitectura soporta multi-tenant (múltiples locales en la misma base de datos) desde Sprint 1 por diseño, pero el onboarding de múltiples venues queda en Capa 3.
 
 ### 1.3 Definiciones y glosario
 
-| Término | Definición |
-|---|---|
-| **venue** | Local gastronómico (tenant raíz del sistema) |
-| **owner** | Dueño del local; gestiona menú, ve analítica, hace onboarding |
-| **garzón** | Personal de sala; toma pedidos en mesas |
-| **KDS** | Kitchen Display System — pantalla de cocina que muestra los pedidos en tiempo real |
-| **dining_table** | Mesa del local (renombrado de `table` para evitar colisión con SQL) |
-| **customer_order** | Pedido (renombrado de `order` para evitar colisión con SQL) |
-| **pending_op** | Operación pendiente de sincronización con Supabase (cola FIFO local) |
-| **LWW** | Last Write Wins — política de resolución de conflictos por `updated_at` server-side |
-| **RLS** | Row-Level Security — mecanismo Postgres de control de acceso por fila |
-| **Drift** | ORM type-safe para Flutter con soporte SQLite (nativo) e IndexedDB (web) |
-| **venue_id** | UUID que identifica a qué venue pertenece cada fila; eje del multi-tenant |
-| **magic link** | Enlace de autenticación sin contraseña enviado al email del owner |
-| **PIN de garzón** | Código numérico corto para identificar al garzón; hasheado en Postgres |
-| **CLP** | Peso chileno. Precios almacenados en centavos (integer) para evitar errores de punto flotante |
+Glosario completo del dominio en [product/glossary.md](../product/glossary.md).
 
 ### 1.4 Referencias
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — C4, modelo de datos, RLS, sync offline-first, contratos API
-- [decisiones.md](decisiones.md) — ADRs con el por qué de cada decisión técnica
-- [CONTRIBUTING.md](../CONTRIBUTING.md) — convenciones de equipo, DoR, DoD, code review
+- [Architecture overview](../architecture/overview.md) — C4, modelo de datos, RLS, sync, contratos API.
+- [Architecture decisions](../architecture/decisions/) — ADRs con el por qué de cada decisión técnica.
+- [Acceptance criteria](acceptance-criteria.md) — escenarios Given-When-Then.
+- [User stories](user-stories.md) — historias por épica.
+- [contributing.md](../contributing.md) — convenciones de equipo, DoR, DoD, code review.
 
 ---
 
@@ -54,52 +42,46 @@ La arquitectura soporta multi-tenant (múltiples locales en la misma base de dat
 
 ### 2.1 Perspectiva del producto
 
-COMAND-IA reemplaza la libreta del garzón y el cuaderno del dueño con una sola aplicación que opera offline-first (toma pedidos sin internet) y sincroniza en tiempo real cuando hay conexión. La cocina ve el pedido en pantalla apenas se confirma; el dueño ve qué se vendió sin abrir Excel.
-
-El sistema es multiplataforma: un único codebase Flutter corre en Android, iOS, web y desktop. Para el MVP académico el canal principal es web (Chrome/Firefox/Safari) sobre tablet o desktop, con soporte nativo para mobile desde el mismo build. Ver [ARCHITECTURE.md](ARCHITECTURE.md) para el C4 completo.
+Para la perspectiva narrativa ver [product/vision.md](../product/vision.md). Resumen técnico: COMAND-IA es una app Flutter multiplataforma offline-first sobre Supabase BaaS, que reemplaza la libreta del garzón y el cuaderno del dueño con una sola aplicación. Multi-tenant por `venue_id` desde Sprint 1.
 
 ### 2.2 Funciones principales
 
 **Capa 1 — Operación (MVP)**
 
-- Autenticación: magic link para owner, PIN + nombre para garzones
-- Gestión de menú: categorías e ítems con precio en CLP
-- Toma de pedido por mesa con soporte offline (cola FIFO local)
-- KDS realtime: pantalla cocina con cambios de estado en ≤2s
-- Cierre de cuenta: total inmutable, método de pago, estado terminal
-- Multi-tenant: RLS deny-by-default que aísla datos por venue
+- Autenticación: magic link para owner, PIN + nombre para garzones.
+- Gestión de menú: categorías e ítems con precio en CLP.
+- Toma de pedido por mesa con soporte offline (cola FIFO local).
+- KDS realtime: pantalla cocina con cambios de estado en ≤2 s.
+- Cierre de cuenta: total inmutable, método de pago, estado terminal.
+- Multi-tenant: RLS deny-by-default que aísla datos por venue.
 
 **Capa 2 — Analítica (MVP)**
 
-- Dashboard owner: ventas/día, top 5 ítems, ticket promedio, hora pico
-- Filtros temporales: hoy / 7 días / 30 días
-- Exportación CSV con separador `;` y encoding chileno
+- Dashboard owner: ventas/día, top 5 ítems, ticket promedio, hora pico.
+- Filtros temporales: hoy / 7 días / 30 días.
+- Exportación CSV con separador `;` y encoding chileno (UTF-8-BOM).
 
 ### 2.3 Personas
 
-| Persona | Objetivo principal | Contexto de uso | Dispositivo típico |
-|---|---|---|---|
-| **Garzón** | Tomar pedido rápido sin errores, ver estado de sus mesas | Sala con ruido, manos ocupadas, sin tiempo para aprender | Tablet (principal) o móvil; web fallback |
-| **Dueño (owner)** | Ver qué se vendió hoy y esta semana | Escritorio o trastienda, con calma relativa | Desktop o tablet; web |
-| **Cocina** | Ver los pedidos llegando en tiempo real, marcar como listo | Cocina con humedad y grasa; visión desde lejos | Tablet montada en pared; web |
+Ver [product/vision.md § Usuarios](../product/vision.md).
 
 ### 2.4 Restricciones
 
 | Restricción | Detalle |
 |---|---|
 | **Flutter multiplataforma** | Un solo codebase para Android, iOS, web y desktop. Sin bifurcación de código por plataforma salvo adaptaciones de layout. |
-| **Supabase free tier** | Hasta 500 MB DB, 200 conexiones realtime simultáneas, 2M mensajes/mes. Suficiente para academia. |
-| **Capacidad equipo** | ~20h/sprint efectivas (2 personas × ~10h). Scope se recorta antes que calidad. |
+| **Supabase free tier** | Hasta 500 MB DB, 200 conexiones realtime simultáneas, 2 M mensajes/mes. Suficiente para academia. |
+| **Capacidad equipo** | ~20 h/sprint efectivas (2 personas × ~10 h). Scope se recorta antes que calidad. |
 | **AGPL-3.0** | Todo despliegue público debe publicar el código fuente derivado. |
 | **Sin presupuesto** | Stack elegido en tier gratuito o open-source. Sin licencias pagas. |
 | **Idioma** | Código e identifiers en inglés. Docs, commits, issues y ADRs en español. |
-| **Impresión de boletas** | Fuera del MVP (Capa 1.5). La arquitectura no la bloquea, pero no se implementa en este semestre. |
+| **Impresión de boletas** | Fuera del MVP (Capa 1.5). La arquitectura no la bloquea, pero no se implementa este semestre. |
 
 ### 2.5 Suposiciones y dependencias
 
 - Supabase permanece en tier free durante el semestre sin degradar realtime.
-- Drift es viable en Flutter web (IndexedDB). Si el spike Sprint 1 lo descarta, se migra a Hive (ver ADR-0004 en [decisiones.md](decisiones.md)).
-- Los locales gastronómicos target tienen conexión a internet al menos intermitente (el sistema tolera desconexión, no la asume permanente).
+- Drift es viable en Flutter web (IndexedDB). Si el spike Sprint 1 lo descarta, se migra a Hive ([ADR-0004](../architecture/decisions/0004-drift-persistencia-local.md)).
+- Los locales gastronómicos target tienen conexión a internet **al menos intermitente** (el sistema tolera desconexión, no la asume permanente).
 
 ---
 
@@ -111,8 +93,8 @@ Formato: `id | descripción imperativa | criterio de verificación`.
 
 | ID | Descripción | Criterio de verificación |
 |---|---|---|
-| RF-AUTH-001 | El sistema envía un magic link al email del owner cuando este solicita acceso. | El usuario recibe el correo en ≤60s y el link expira en 24h. |
-| RF-AUTH-002 | El sistema autentica a un garzón con su nombre y PIN de 4-6 dígitos asociado al venue. | PIN correcto retorna sesión de garzón; PIN incorrecto no. |
+| RF-AUTH-001 | El sistema envía un magic link al email del owner cuando este solicita acceso. | El usuario recibe el correo en ≤60 s y el link expira en 24 h. |
+| RF-AUTH-002 | El sistema autentica a un garzón con su nombre y PIN de 4–6 dígitos asociado al venue. | PIN correcto retorna sesión de garzón; PIN incorrecto no. |
 | RF-AUTH-003 | El sistema bloquea la autenticación por PIN tras 5 intentos fallidos consecutivos para el mismo usuario. | El 6° intento retorna error bloqueado aunque el PIN sea correcto. |
 | RF-AUTH-004 | El sistema almacena el PIN hasheado con `pgcrypto.crypt()`; nunca persistido en texto plano. | La columna `pin_hash` no contiene el PIN original; solo `verify_pin()` SECURITY DEFINER lo valida. |
 | RF-AUTH-005 | El owner puede invitar a un garzón creando un perfil con nombre y PIN en el panel de administración. | El garzón nuevo puede autenticarse con ese PIN en el mismo venue. |
@@ -146,8 +128,8 @@ Formato: `id | descripción imperativa | criterio de verificación`.
 
 | ID | Descripción | Criterio de verificación |
 |---|---|---|
-| RF-KDS-001 | La pantalla de cocina muestra en tiempo real todos los pedidos en estado `sent` o `preparing` del venue. | Nuevo ítem enviado por garzón aparece en KDS en ≤2s. |
-| RF-KDS-002 | El cocinero puede cambiar el estado de un pedido a `preparing` y luego a `ready`. | El cambio de estado se propaga al garzón vía realtime en ≤2s. |
+| RF-KDS-001 | La pantalla de cocina muestra en tiempo real todos los pedidos en estado `sent` o `preparing` del venue. | Nuevo ítem enviado por garzón aparece en KDS en ≤2 s. |
+| RF-KDS-002 | El cocinero puede cambiar el estado de un pedido a `preparing` y luego a `ready`. | El cambio de estado se propaga al garzón vía realtime en ≤2 s. |
 | RF-KDS-003 | La pantalla KDS muestra nombre de la mesa, ítems, cantidad y comentarios para cada pedido. | La información coincide con lo registrado por el garzón. |
 | RF-KDS-004 | Los pedidos `ready` se distinguen visualmente de los `preparing` y `sent`. | Diferencia de color o iconografía clara entre estados. |
 
@@ -161,7 +143,7 @@ Formato: `id | descripción imperativa | criterio de verificación`.
 | RF-ANALY-004 | El dashboard muestra la hora pico (hora del día con más pedidos) en el periodo. | La hora pico coincide con la distribución horaria en el seed. |
 | RF-ANALY-005 | El owner puede filtrar la vista por tres periodos (hoy / 7d / 30d) sin recargar la página. | El filtro cambia los datos sin navegación. |
 | RF-ANALY-006 | El owner puede exportar los datos del periodo como CSV con separador `;` y encoding UTF-8-BOM (compatible Excel chileno). | El archivo se descarga y abre correctamente en Excel con caracteres especiales. |
-| RF-ANALY-007 | El dashboard responde en ≤1.5s para hasta 30 días de datos en Supabase. | Medido con herramientas de red del browser con dataset seed estándar. |
+| RF-ANALY-007 | El dashboard responde en ≤1.5 s para hasta 30 días de datos en Supabase. | Medido con herramientas de red del browser con dataset seed estándar. |
 
 ### 3.6 Multi-tenant / Onboarding (RF-TENANT)
 
@@ -180,10 +162,10 @@ Formato: `id | descripción imperativa | criterio de verificación`.
 
 | ID | Descripción | Métrica |
 |---|---|---|
-| RNF-PERF-001 | La toma de pedido responde (persist local) en modo offline. | p95 ≤200ms medido con `flutter_test` en dispositivo de referencia. |
+| RNF-PERF-001 | La toma de pedido responde (persist local) en modo offline. | p95 ≤200 ms medido con `flutter_test` en dispositivo de referencia. |
 | RNF-PERF-002 | La sincronización al reconectarse no bloquea la UI. | Sync corre en isolate/background; UI responde durante la operación. |
-| RNF-PERF-003 | El dashboard de analítica carga en ≤1.5s con 30 días de datos. | Medido desde red request hasta renderizado completo con dataset seed estándar. |
-| RNF-PERF-004 | El KDS refleja cambios en ≤2s desde la acción del garzón. | Medido con dos sesiones simultáneas en staging. |
+| RNF-PERF-003 | El dashboard de analítica carga en ≤1.5 s con 30 días de datos. | Medido desde red request hasta renderizado completo con dataset seed estándar. |
+| RNF-PERF-004 | El KDS refleja cambios en ≤2 s desde la acción del garzón. | Medido con dos sesiones simultáneas en staging. |
 
 ### 4.2 Compatibility (RNF-COMPAT)
 
@@ -197,7 +179,7 @@ Formato: `id | descripción imperativa | criterio de verificación`.
 
 | ID | Descripción | Métrica |
 |---|---|---|
-| RNF-USAB-001 | Todos los elementos interactivos tienen tap target ≥44×44 px. | Auditoria con Flutter DevTools (widget inspector) antes de Avance 2. |
+| RNF-USAB-001 | Todos los elementos interactivos tienen tap target ≥44×44 px. | Auditoría con Flutter DevTools (widget inspector) antes de Avance 2. |
 | RNF-USAB-002 | Un garzón nuevo puede completar su primer pedido en ≤5 min sin manual de usuario. | Validado con prueba de usuario antes de Avance 2. |
 | RNF-USAB-003 | Todos los estados relevantes (loading, error, vacío) tienen representación visual explícita. | Revisión en code review: no se acepta pantalla en blanco ni spinner infinito. |
 | RNF-USAB-004 | Los contrastes de color cumplen WCAG AA (ratio ≥4.5:1 para texto normal). | Verificado con herramienta de contraste en pantallas finales. |
@@ -216,9 +198,9 @@ Formato: `id | descripción imperativa | criterio de verificación`.
 |---|---|---|
 | RNF-SEC-001 | Toda tabla con `venue_id` tiene RLS habilitada y al menos una policy USING. | Test pgTAP valida `pg_policies` en nightly. |
 | RNF-SEC-002 | Un usuario de venue B no puede leer ni escribir datos de venue A. | Test SQL cross-venue en pgTAP: 0 filas retornadas con token de venue B. |
-| RNF-SEC-003 | El PIN de garzón no se persiste ni registra en texto plano; se envía por TLS y se valida via `verify_pin()` SECURITY DEFINER. | Code review: ningún query directo sobre `pin_hash` en el cliente ni logging del PIN. |
+| RNF-SEC-003 | El PIN de garzón no se persiste ni registra en texto plano; se envía por TLS y se valida vía `verify_pin()` SECURITY DEFINER. | Code review: ningún query directo sobre `pin_hash` en el cliente ni logging del PIN. |
 | RNF-SEC-004 | No hay secretos (tokens, claves) hardcodeados en el código fuente. | `git grep` en CI sobre patrones comunes de credenciales. Sentry alerta si detecta key leak. |
-| RNF-SEC-005 | Las migraciones SQL son forward-only en MVP. | Política documentada en [ARCHITECTURE.md](ARCHITECTURE.md); rollback manual si se necesita. |
+| RNF-SEC-005 | Las migraciones SQL son forward-only en MVP. | Política documentada en [database/migrations.md](../database/migrations.md); rollback manual si se necesita. |
 
 ### 4.6 Maintainability (RNF-MAIN)
 
@@ -226,7 +208,7 @@ Formato: `id | descripción imperativa | criterio de verificación`.
 |---|---|---|
 | RNF-MAIN-001 | Cobertura de tests ≥70% en `domain/` y ≥60% global. | Reporte lcov en cada PR; falla CI si no se cumple. |
 | RNF-MAIN-002 | Cero warnings de `very_good_analysis`. | `flutter analyze --fatal-warnings` en CI. |
-| RNF-MAIN-003 | Toda decisión arquitectónica nueva tiene un ADR en [decisiones.md](decisiones.md) en estado `Accepted` antes de mergearse. | Checklist de code review: ADR requerido si aplica. |
+| RNF-MAIN-003 | Toda decisión arquitectónica nueva tiene un ADR en [`architecture/decisions/`](../architecture/decisions/) en estado `accepted` antes de mergearse. | Checklist de code review: ADR requerido si aplica. |
 | RNF-MAIN-004 | No hay lógica de negocio en widgets (capa de presentación). | Code review: se rechaza PR que incluya UseCase o query de repositorio directo en un widget. |
 
 ### 4.7 Portability (RNF-PORT)
@@ -238,34 +220,10 @@ Formato: `id | descripción imperativa | criterio de verificación`.
 
 ---
 
-## 5. Casos de aceptación
+## 5. Trazabilidad y verificación
 
-### Capa 1 — Operación
+- Casos de aceptación detallados en [acceptance-criteria.md](acceptance-criteria.md) (Given-When-Then).
+- Historias derivadas de los RFs en [user-stories.md](user-stories.md).
+- Estrategia de pruebas (pirámide, cobertura por capa, métricas de flakiness) en [quality/testing-strategy.md](../quality/testing-strategy.md).
 
-| ID | Nombre | Escenario | Resultado esperado |
-|---|---|---|---|
-| CA-001 | PIN bloqueado | Garzón ingresa PIN incorrecto 5 veces. En el 6° intento ingresa el PIN correcto. | El sistema rechaza el acceso y retorna estado `bloqueado`. |
-| CA-002 | Aislamiento de mesas por venue | Garzón autenticado en venue A navega a la vista de mesas. | Solo ve las mesas de venue A; nunca las de venue B. |
-| CA-003 | Pedido offline persiste | Red desconectada. Garzón completa un pedido y lo confirma. | UI muestra OK. `pending_op` contiene la operación. No hay pérdida de datos. |
-| CA-004 | Sync al reconectarse | Después de CA-003, la red se restablece. | `pending_op` se vacía en orden FIFO. El pedido llega a Supabase. El KDS lo muestra en ≤2s. |
-| CA-005 | Realtime KDS → garzón | Cocinero marca pedido como `ready` en el KDS. | El garzón ve el cambio de estado en su vista de mesas en ≤2s sin recargar. |
-| CA-006 | Estado `closed` es terminal | Pedido está cerrado. Garzón intenta agregar un ítem. | El sistema rechaza la operación con error de estado terminal. |
-| CA-007 | Aislamiento de pedidos por venue (SQL) | Token de venue B intenta SELECT sobre `customer_order` sin filtro explícito. | Retorna 0 filas (RLS bloquea). Test pgTAP. |
-
-### Capa 2 — Analítica
-
-| ID | Nombre | Escenario | Resultado esperado |
-|---|---|---|---|
-| CA-101 | Dashboard carga rápido | Owner abre dashboard con filtro 30d y dataset seed estándar. | Datos visibles en ≤1.5s. |
-| CA-102 | Filtro sin refresh | Owner cambia filtro de 7d a hoy. | Datos actualizados sin recarga de página. |
-| CA-103 | Top 5 determinista | Dataset seed con distribución conocida. | El ranking de top 5 ítems coincide con el esperado. |
-| CA-104 | Aislamiento dashboard | Owner de venue A abre su dashboard. | Solo ve datos de venues que posee; nunca de venue B. |
-| CA-105 | Export CSV | Owner exporta CSV con filtro 30d. | Archivo descargado con separador `;`, encoding UTF-8-BOM, sin datos de otros venues. |
-
----
-
-## 6. Verificación
-
-La estrategia de pruebas completa (pirámide de tests, cobertura por capa, métricas de flakiness) está documentada en [ARCHITECTURE.md § 10 Estrategia de pruebas](ARCHITECTURE.md).
-
-Los casos de aceptación de esta sección son los criterios verificables mínimos. Un sprint no está "Done" si alguno de los CA relevantes no pasa.
+Un sprint no está "Done" si alguno de los casos de aceptación relevantes no pasa.
