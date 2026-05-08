@@ -1,6 +1,6 @@
 # Roadmap — COMAND-IA
 
-Última actualización: 2026-05-02.
+Última actualización: 2026-05-08.
 
 ## Norte del semestre
 
@@ -10,6 +10,12 @@
 | 2026-07-07 | Defensa final | MVP Capa 1 + Capa 2: operación completa y dashboard owner |
 
 Regla de scope: si el sprint se aprieta, se recorta funcionalidad antes que tests, RLS, documentación o CI.
+
+## Alcance de los issues COMA
+
+Los issues `COMA-001` a `COMA-014` están diseñados para cerrar el **MVP académico funcional**: Capa 1 (operación) + Capa 2 (analítica mínima). Si `COMA-014` queda en `done` con CI verde, documentación actualizada y demo manual validada, el proyecto debería tener una versión defendible en funcionalidad.
+
+Ese set no agota todo el trabajo del semestre. Sprint 7 a Sprint 10 requieren abrir issues adicionales (`COMA-015+`) para hardening UX, accesibilidad, Sentry, pruebas de integración/golden, code freeze, video demo, slides, ensayo y tag de release. Esos issues no cambian el alcance funcional del MVP; reducen riesgo y preparan la defensa final.
 
 ## GitHub Projects
 
