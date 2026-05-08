@@ -68,8 +68,8 @@ Adoptamos **Drift** como motor de persistencia local. En **Sprint 1 dedicamos un
 
 ## Cumplimiento / verificación
 
-- Spike Sprint 1: ticket `COMA-NNN` con criterio de aceptación "operación CRUD completa sobre `pending_op` y `menu_item` en Chromium con IndexedDB".
-- Si el spike falla → ADR sucesor antes de cerrar Sprint 1.
+- Spike Sprint 1: [COMA-004](../spikes/COMA-004-drift-web.md) cerrado con `spike-done` el 2026-05-07. Drift opera sobre IndexedDB en CanvasKit con INSERT/SELECT/DELETE persistentes entre recargas y consistentes entre pestañas; no se gatilla el fallback a Hive.
+- Si el spike falla → ADR sucesor antes de cerrar Sprint 1. *(No aplicó.)*
 - Tests de integración (Sprint 3+): pedido offline persiste y sobrevive a reinicio (RNF-REL-002, CA-003).
 - Test pgTAP: `pending_op` no existe en schema público de Supabase (ver `supabase/tests/`).
 

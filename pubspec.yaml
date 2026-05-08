@@ -24,7 +24,9 @@ dependencies:
 
   # Local persistence (offline-first)
   drift: ^2.23.1
+  drift_flutter: ^0.2.4
   sqlite3_flutter_libs: ^0.5.28
+  path_provider: ^2.1.5
 
   # Observability
   sentry_flutter: ^8.13.0

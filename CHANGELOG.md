@@ -11,6 +11,7 @@ Versionado: una entrada por **entrega académica** del semestre (no SemVer estri
 - Reorganización de `docs/` al árbol canónico de la metodología in-house (`Estructura de docs.md`): `product/`, `requirements/`, `architecture/`, `database/`, `quality/`, `security/`, `devops/`, `operations/`, `api/`.
 - Migración de los 8 ADRs de `docs/decisiones.md` a archivos MADR separados en `docs/architecture/decisions/`.
 - `CHANGELOG.md` en raíz siguiendo Keep a Changelog 1.1.0.
+- Spike COMA-004: prototipo Drift en Flutter web (`lib/core/local/spike_db.dart`, ruta `/spike`, worker `web/drift_worker.dart` + `sqlite3.wasm`). Resultado: Drift viable en CanvasKit + IndexedDB; ADR-0004 confirmado, fallback Hive no se activa. Detalle en [docs/architecture/spikes/COMA-004-drift-web.md](docs/architecture/spikes/COMA-004-drift-web.md).
 
 ### Removed
 - `docs/SRS.md`, `docs/ARCHITECTURE.md`, `docs/decisiones.md`, `docs/ROADMAP.md` — migrados al árbol canónico (los antiguos se borran sin redirect; los punteros viejos se actualizan en el mismo cambio).

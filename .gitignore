@@ -21,6 +21,10 @@ coverage/
 *.lcov
 
 # Flutter web specific
+# Sub-productos de `dart compile js` para el worker de Drift (ver web/drift_worker.dart).
+# El bundle `drift_worker.dart.js` y `web/sqlite3.wasm` sí se traquean.
+web/drift_worker.dart.js.deps
+web/drift_worker.dart.js.map
 
 # ──────────────── Plataformas ────────────────
 android/app/debug
@@ -49,8 +53,8 @@ macos/Flutter/ephemeral/
 windows/flutter/ephemeral/
 web/.dart_tool/
 
-# ──────────────── Codegen (Riverpod, Drift, Freezed) ────────────────
-*.g.dart
+# ──────────────── Codegen ────────────────
+# Los `*.g.dart` se versionan por ADR-0003/ADR-0004 (Riverpod y Drift).
 *.freezed.dart
 *.gr.dart
 *.config.dart
