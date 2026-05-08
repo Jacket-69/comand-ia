@@ -46,8 +46,8 @@ test/COMA-230-add-rls-cross-venue     ← solo tests
 `COMA-NNN` = número del issue de GitHub Projects. Sin issue, no hay rama.
 
 El roadmap operativo vive en el GitHub Project **COMAND-IA — Sprints** y se
-resume en [docs/ROADMAP.md](docs/ROADMAP.md). Si el Project y la documentación
-se contradicen, se corrigen ambos en el mismo PR o commit.
+resume en [docs/product/roadmap.md](docs/product/roadmap.md). Si el Project y
+la documentación se contradicen, se corrigen ambos en el mismo PR o commit.
 
 ---
 
@@ -125,7 +125,14 @@ Una historia es "done" cuando:
 3. **Lint clean:** `very_good_analysis` sin warnings (warnings = errores).
 4. **1 review aprobada** del otro dev. Self-merge prohibido.
 5. **Demo verificada** por el reviewer en preview Vercel (o build local si toca nativo).
-6. **Documentación actualizada:** SRS / ARCHITECTURE / decisiones / README según aplique.
+6. **Documentación actualizada** según el árbol canónico de `docs/`:
+   - `docs/requirements/srs.md` si cambió un RF o RNF.
+   - `docs/architecture/` y/o `docs/architecture/decisions/<NNNN>-<slug>.md` si cambió el diseño o se tomó una decisión costosa.
+   - `docs/database/` si tocaste schema o RLS.
+   - `docs/api/contracts.md` si cambió un RPC, una tabla o un canal realtime.
+   - `docs/product/glossary.md` si introdujiste un término del dominio.
+   - `CHANGELOG.md` si la historia es user-facing.
+   - `README.md` si cambió el quickstart o el listado de docs.
 7. **Issue cerrado** en GitHub Projects con link al PR.
 8. **Sin TODOs huérfanos** en el código (todo TODO debe linkear a un issue).
 
@@ -170,9 +177,10 @@ Cuando revisas un PR, pasas por esta lista. Comentas inline lo que no aplica.
 - [ ] Tap targets ≥44px en mobile.
 
 ### Docs (si aplica)
-- [ ] ADR creado si la decisión es arquitectónica.
-- [ ] SRS actualizado si cambió un requisito funcional.
-- [ ] ARCHITECTURE actualizado si cambió el modelo de datos o un contrato API.
+- [ ] ADR creado en `docs/architecture/decisions/NNNN-<slug>.md` (formato MADR) si la decisión es arquitectónica.
+- [ ] `docs/requirements/srs.md` actualizado si cambió un RF o RNF.
+- [ ] `docs/architecture/`, `docs/database/` o `docs/api/contracts.md` actualizados si cambió el diseño, el modelo de datos o un contrato.
+- [ ] `docs/product/glossary.md` actualizado si introdujiste un término del dominio.
 
 ---
 
@@ -224,12 +232,12 @@ Closes COMA-XXX
 
 ## Cómo abrir un ADR
 
-1. Copiar la plantilla mental (Title / Status / Context / Decision / Consequences) — ver [docs/decisiones.md](docs/decisiones.md) para el formato.
-2. Agregar entrada al final de `docs/decisiones.md` con número siguiente (`ADR-NNNN`).
-3. Estado inicial: `Proposed`.
+1. Copiar [`docs/architecture/decisions/0000-template.md`](docs/architecture/decisions/0000-template.md) (formato MADR liviano).
+2. Crear archivo nuevo `docs/architecture/decisions/NNNN-<slug>.md` con el siguiente número de la secuencia (sin reusar números, aunque haya ADR `rejected` o `superseded`).
+3. Frontmatter inicial: `status: proposed`, `date: YYYY-MM-DD`, `deciders: <quién(es)>`.
 4. PR titulado `docs(adr): ADR-NNNN <título>`.
-5. Discusión en el PR. Cuando ambos aprobamos → cambiar a `Accepted` y mergear.
-6. Si una decisión futura supera a esta → marcar como `Superseded by ADR-MMMM`. Nunca borrar.
+5. Discusión en el PR. Cuando ambos aprobamos → cambiar a `accepted` y mergear.
+6. Si una decisión futura supera a esta → marcar como `superseded by ADR-MMMM`. Nunca borrar el archivo.
 
 ---
 
@@ -252,10 +260,10 @@ Closes COMA-XXX
 
 Antes de implementar, leer:
 
-1. [docs/HANDOFF.md](docs/HANDOFF.md)
-2. [docs/ROADMAP.md](docs/ROADMAP.md)
-3. [README.md](README.md)
-4. Este archivo
+1. [README.md](README.md) — quickstart, índice de documentación y opt-outs académicos.
+2. [docs/product/roadmap.md](docs/product/roadmap.md) — sprint actual y backlog.
+3. [docs/architecture/overview.md](docs/architecture/overview.md) — cómo encajan las piezas.
+4. Este archivo (DoR/DoD/code review).
 
 Luego elegir el issue `Todo` más prioritario del GitHub Project que cumpla DoR.
 Si el issue no está listo, actualizar el issue antes de abrir rama. Si el cambio
