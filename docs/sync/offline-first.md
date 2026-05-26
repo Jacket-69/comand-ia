@@ -83,4 +83,4 @@ Si en el futuro se necesita edición concurrente real (ej: garzón + supervisor 
 - [ADR-0008](../architecture/decisions/0008-sync-offline-first-fifo-lww.md) — Sync FIFO + LWW.
 - [SRS § 4.4 Reliability](../requirements/srs.md) — RNF-REL-001, RNF-REL-002.
 - [SRS § 5](../requirements/srs.md) — CA-003, CA-004, CA-005.
-- [architecture/c4-components.md](../architecture/c4-components.md) — `SyncService` en feature `orders`.
+- [architecture/c4-container.md](../architecture/c4-container.md) — contenedores y capas internas, incluyendo el `SyncService` en la capa de datos.

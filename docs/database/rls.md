@@ -79,4 +79,4 @@ Checklist al agregar tabla con datos de negocio:
 - [ADR-0005](../architecture/decisions/0005-multi-tenancy-rls-deny-by-default.md) — Multi-tenancy + RLS deny-by-default.
 - [SRS § 4.5 Security](../requirements/srs.md) — RNF-SEC-001..004.
 - [SRS § 5 Casos de aceptación](../requirements/srs.md) — CA-002, CA-007, CA-104.
-- [database/model.md](model.md), [security/security.md](../security/security.md), [security/threat-model.md](../security/threat-model.md).
+- [database/model.md](model.md), [security/security.md](../security/security.md), threat model (opt-in).

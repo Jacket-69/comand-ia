@@ -82,7 +82,7 @@ Para casos catastróficos durante el semestre académico (sin clientes reales), 
 
 ### Backend (Supabase) — datos
 
-Supabase free tier provee retención automática de backups (point-in-time recovery limitado). Para academia es suficiente; un backup-policy propio queda **en opt-out** ([opt-outs académicos](../../README.md#metodología-y-opt-outs)).
+Supabase free tier provee retención automática de backups (point-in-time recovery limitado). Para academia es suficiente; un backup-policy propio queda **en opt-out** ([opt-outs académicos](../../README.md#metodología-aplicada)).
 
 ## Versionado
 
@@ -109,7 +109,7 @@ En **opt-out** durante el semestre (n=2 personas, ruido estadístico). Se observ
 ## Referencias
 
 - [ci-cd.md](ci-cd.md) — pipeline de CI.
-- [branching-strategy.md](branching-strategy.md) — flujo Git y Conventional Commits.
+- [../../CONTRIBUTING.md](../../CONTRIBUTING.md) — flujo Git y Conventional Commits.
 - [operations/runbook.md](../operations/runbook.md) — qué hacer cuando staging o prod se rompen.
 - [operations/observability.md](../operations/observability.md) — qué monitorear post-deploy.
 - [database/migrations.md](../database/migrations.md) — política forward-only.

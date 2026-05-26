@@ -12,10 +12,16 @@ Versionado: una entrada por **entrega académica** del semestre (no SemVer estri
 - Migración de los 8 ADRs de `docs/decisiones.md` a archivos MADR separados en `docs/architecture/decisions/`.
 - `CHANGELOG.md` en raíz siguiendo Keep a Changelog 1.1.0.
 - Spike COMA-004: prototipo Drift en Flutter web (`lib/core/local/spike_db.dart`, ruta `/spike`, worker `web/drift_worker.dart` + `sqlite3.wasm`). Resultado: Drift viable en CanvasKit + IndexedDB; ADR-0004 confirmado, fallback Hive no se activa. Detalle en [docs/architecture/spikes/COMA-004-drift-web.md](docs/architecture/spikes/COMA-004-drift-web.md).
+- Expansión del dominio a operación POS real: ADRs 0009-0012 (roles granulares, caja y cierre de turno, inventario con costeo por receta, modificadores estructurados) + actualización de `vision`, `glossary` y `srs`.
+- Perfil de metodología declarado en el README: **Estándar (M) × BaaS-only**.
+
+### Changed
+- Reestructuración de `docs/` al perfil **Estándar × BaaS-only**: `roadmap.md` y `storyboards.md` reducidos a punteros al board (la fuente de verdad de sprints/estado son los milestones e issues, no archivos `.md`).
 
 ### Removed
 - `docs/SRS.md`, `docs/ARCHITECTURE.md`, `docs/decisiones.md`, `docs/ROADMAP.md` — migrados al árbol canónico (los antiguos se borran sin redirect; los punteros viejos se actualizan en el mismo cambio).
 - Otros archivos planos en `docs/` que ya no calzan con la organización por dominio.
+- `architecture/c4-components.md` (C4 nivel 3 = talla L, no requerido en M), `requirements/user-stories.md` y `requirements/acceptance-criteria.md` (historias y criterios viven en el board de issues), `quality/sqa-plan.md` (fuera de la planta M) y `devops/branching-strategy.md` (duplicaba `CONTRIBUTING.md`).
 
 ## [v0.1.0-avance-1] — 2026-04-28
 

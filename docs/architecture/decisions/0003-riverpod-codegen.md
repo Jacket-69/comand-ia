@@ -80,6 +80,6 @@ features/<feature>/presentation/controllers/
 ## Referencias
 
 - [SRS § 4.6 Maintainability](../../requirements/srs.md) — RNF-MAIN-004.
-- [Architecture Components](../c4-components.md).
+- [Architecture Containers](../c4-container.md).
 - ADRs relacionados: [ADR-0001](0001-flutter-multiplataforma.md), [ADR-0004](0004-drift-persistencia-local.md).
 - Doc oficial: [riverpod.dev](https://riverpod.dev/).

@@ -127,7 +127,7 @@
 | **Avance 1** | Entrega académica 2026-04-28 — scaffolding ejecutable. |
 | **Avance 2** | Entrega académica 2026-05-26 — Capa 1 demoable (alcance acotado del MVP académico, no la Capa 1 completa de visión). |
 | **Defensa** | Entrega final 2026-07-07. |
-| **DoR** | Definition of Ready — checklist para que una historia entre al sprint. Ver [contributing.md](../contributing.md). |
+| **DoR** | Definition of Ready — checklist para que una historia entre al sprint. Ver [contributing.md](../../CONTRIBUTING.md). |
 | **DoD** | Definition of Done — checklist para que una historia se cierre. Ver [quality/definition-of-done.md](../quality/definition-of-done.md). |
 | **ADR** | Architecture Decision Record. Una decisión por archivo en formato MADR. Ver [architecture/decisions/](../architecture/decisions/). |
 
