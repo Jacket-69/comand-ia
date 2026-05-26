@@ -83,6 +83,5 @@ supabase test db                                        # pgTAP completo
 ## Referencias
 
 - [SRS § 4.6 Maintainability](../requirements/srs.md) — RNF-MAIN-001..004.
-- [Acceptance criteria](../requirements/acceptance-criteria.md) — qué cubre cada CA.
+- Los criterios de aceptación (CA) están definidos en cada issue del board (issues COMA).
 - [Definition of Done](definition-of-done.md).
-- [SQA plan](sqa-plan.md).

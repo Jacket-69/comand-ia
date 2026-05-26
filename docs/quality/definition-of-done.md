@@ -4,7 +4,7 @@
 
 ## Checklist canónico
 
-- [ ] Cumple todos los **criterios de aceptación** de la historia (ver [acceptance-criteria.md](../requirements/acceptance-criteria.md)).
+- [ ] Cumple todos los **criterios de aceptación** de la historia (criterios de aceptación definidos en el issue de la historia).
 - [ ] **Tests relevantes** escritos:
   - Unit en `domain/` para reglas de negocio nuevas o modificadas.
   - Integration cuando toca Supabase, Drift o realtime.
@@ -59,7 +59,6 @@ La historia sigue en `in progress`. **No se forza el merge.** Si el sprint aprie
 
 ## Referencias
 
-- [Acceptance criteria](../requirements/acceptance-criteria.md) — escenarios Given-When-Then.
+- Los criterios de aceptación (Given-When-Then) están definidos en el issue de cada historia.
 - [Testing strategy](testing-strategy.md) — pirámide y cobertura objetivo.
-- [SQA plan](sqa-plan.md) — qué se hace en cada fase para asegurar calidad.
 - [../../CONTRIBUTING.md](../../CONTRIBUTING.md) — DoR, branching, code review checklist.

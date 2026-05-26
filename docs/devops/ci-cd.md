@@ -99,5 +99,5 @@ Detalle de uso por entorno en [release-process.md](release-process.md). Manejo s
 - `.github/workflows/ci.yml` — fuente de verdad del pipeline.
 - `lefthook.yml` — hooks pre-commit.
 - [release-process.md](release-process.md) — qué pasa después del merge a `main`.
-- [branching-strategy.md](branching-strategy.md) — flujo Git que alimenta el pipeline.
+- [../../CONTRIBUTING.md](../../CONTRIBUTING.md) — flujo Git y branching que alimenta el pipeline.
 - [definition-of-done.md](../quality/definition-of-done.md) — gate de CI dentro del DoD.

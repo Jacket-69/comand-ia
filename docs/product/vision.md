@@ -74,7 +74,7 @@ Estas capacidades quedan deliberadamente fuera del alcance actual. Su exclusión
 ## Referencias
 
 - [SRS](../requirements/srs.md) — requisitos formales (IEEE 29148 + ISO 25010).
-- [User stories](../requirements/user-stories.md) — historias por épica.
+- [Historias en el board (issues COMA)](https://github.com/Jacket-69/comand-ia/issues) — historias por épica.
 - [Glossary](glossary.md) — lenguaje del dominio.
 - [Roadmap](roadmap.md) — orden de implementación y prioridades.
 - [Architecture overview](../architecture/overview.md) — cómo está hecho.

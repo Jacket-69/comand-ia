@@ -85,5 +85,5 @@ Adoptamos **GitHub Flow** con las siguientes reglas:
 - [GitHub Flow](https://docs.github.com/en/get-started/quickstart/github-flow).
 - [Conventional Commits 1.0.0](https://www.conventionalcommits.org/es/v1.0.0/).
 - [Keep a Changelog 1.1.0](https://keepachangelog.com/es-ES/1.1.0/).
-- [docs/contributing.md](../../contributing.md), [docs/devops/branching-strategy.md](../../devops/branching-strategy.md).
+- [CONTRIBUTING.md](../../../CONTRIBUTING.md) — branching + Conventional Commits.
 - ADRs relacionados: ninguno (decisión de proceso transversal).

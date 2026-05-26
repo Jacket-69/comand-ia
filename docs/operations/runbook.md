@@ -29,7 +29,7 @@ uptimerobot monitorea `/health` cada 5 min (alerta por email + SMS si cae 2 cheq
 
 ## Backups
 
-**Sin backup-policy propio en MVP** ([opt-out documentado](../../README.md#metodología-y-opt-outs)). Supabase free tier provee retención automática limitada (point-in-time recovery según el plan). Para datos de demo durante el semestre, basta `seed.sql` regenerable con `supabase db reset`.
+**Sin backup-policy propio en MVP** ([opt-out documentado](../../README.md#metodología-aplicada)). Supabase free tier provee retención automática limitada (point-in-time recovery según el plan). Para datos de demo durante el semestre, basta `seed.sql` regenerable con `supabase db reset`.
 
 Si entra una feature con datos reales del cliente que no se puedan regenerar (post-defensa), levantar el opt-out y escribir `docs/database/backup-policy.md`.
 
@@ -99,4 +99,4 @@ supabase stop                   # al terminar la sesión
 - [observability.md](observability.md) — qué se monitorea y cómo.
 - [database/migrations.md](../database/migrations.md) — política forward-only y migraciones correctivas.
 - [security/security.md](../security/security.md) — manejo de secretos durante un incidente.
-- [opt-out documentado](../../README.md#metodología-y-opt-outs) — opt-outs vigentes (incident-response formal, backup-policy propio).
+- [opt-out documentado](../../README.md#metodología-aplicada) — opt-outs vigentes (incident-response formal, backup-policy propio).

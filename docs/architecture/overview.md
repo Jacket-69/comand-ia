@@ -61,7 +61,6 @@ Tipo de proyecto en la matriz de la metodología: **BaaS-only**.
 
 - [C4 Context](c4-context.md) — sistema y actores externos.
 - [C4 Container](c4-container.md) — contenedores y stacks.
-- [C4 Components](c4-components.md) — módulos no triviales por feature.
 - [Invariants](invariants.md) — ACID-1..7 y aplicación de SOLID.
 
 ## Documentación cruzada

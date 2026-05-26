@@ -30,9 +30,9 @@ Glosario completo del dominio en [product/glossary.md](../product/glossary.md). 
 
 - [Architecture overview](../architecture/overview.md) — C4, modelo de datos, RLS, sync, contratos API.
 - [Architecture decisions](../architecture/decisions/) — ADRs con el por qué de cada decisión técnica.
-- [Acceptance criteria](acceptance-criteria.md) — escenarios Given-When-Then.
-- [User stories](user-stories.md) — historias por épica.
-- [contributing.md](../contributing.md) — convenciones de equipo, DoR, DoD, code review.
+- Los criterios de aceptación están definidos en cada issue del board (issues COMA).
+- [Historias en el board (issues COMA)](https://github.com/Jacket-69/comand-ia/issues) — historias por épica.
+- [contributing.md](../../CONTRIBUTING.md) — convenciones de equipo, DoR, DoD, code review.
 
 ---
 
@@ -282,8 +282,8 @@ Formato: `id | descripción imperativa | criterio de verificación`.
 
 ## 5. Trazabilidad y verificación
 
-- Casos de aceptación detallados en [acceptance-criteria.md](acceptance-criteria.md) (Given-When-Then).
-- Historias derivadas de los RFs en [user-stories.md](user-stories.md).
+- Los criterios de aceptación (Given-When-Then) están definidos en cada issue del board (issues COMA).
+- [Historias en el board (issues COMA)](https://github.com/Jacket-69/comand-ia/issues) — historias derivadas de los RFs.
 - Estrategia de pruebas (pirámide, cobertura por capa, métricas de flakiness) en [quality/testing-strategy.md](../quality/testing-strategy.md).
 
 Un release no está "Done" si alguno de los casos de aceptación relevantes no pasa.

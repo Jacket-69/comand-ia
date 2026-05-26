@@ -1,6 +1,6 @@
 # C4 Nivel 2 — Contenedores
 
-> Contenedores y stacks dentro del sistema. Para el zoom a componentes por feature, ver [c4-components.md](c4-components.md).
+> Contenedores y stacks dentro del sistema. Para la vista de contexto del sistema y actores externos, ver [c4-context.md](c4-context.md).
 
 ## Diagrama
 

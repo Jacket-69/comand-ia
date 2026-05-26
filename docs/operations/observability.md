@@ -70,7 +70,7 @@ Acceso desde el dashboard de Supabase con el rol del proyecto. El equipo lo revi
 
 ## Métricas que NO se monitorean en MVP
 
-Por opt-out académico (ver [opt-outs académicos](../../README.md#metodología-y-opt-outs)):
+Por opt-out académico (ver [opt-outs académicos](../../README.md#metodología-aplicada)):
 
 - **DORA accionables** (lead time, deploy frequency, MTTR, change failure rate) — n=2 personas, ruido estadístico. Se observan como hábito mental, no como métrica.
 - **APM granular del backend** — Supabase Dashboard alcanza para academia.

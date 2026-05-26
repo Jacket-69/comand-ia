@@ -66,7 +66,7 @@ Si alguien commitea por error un secreto:
 
 ## Threat modeling
 
-**STRIDE formal queda en opt-out por contexto académico** (ver [opt-outs académicos](../../README.md#metodología-y-opt-outs)). En su reemplazo, el equipo aplica un check informal **antes de mergear features que tocan auth, datos del cliente o el contrato del backend**:
+**STRIDE formal queda en opt-out por contexto académico** (ver [opt-outs académicos](../../README.md#metodología-aplicada)). En su reemplazo, el equipo aplica un check informal **antes de mergear features que tocan auth, datos del cliente o el contrato del backend**:
 
 | STRIDE | Pregunta | Respuesta esperada en COMAND-IA |
 |---|---|---|
@@ -108,5 +108,5 @@ OWASP SAMM queda en opt-out total para academia.
 - [api/contracts.md](../api/contracts.md) — RPCs SECURITY DEFINER.
 - [operations/observability.md](../operations/observability.md) — qué se loguea y qué no.
 - [release-process.md](../devops/release-process.md) — manejo de variables por entorno.
-- [threat-model.md](threat-model.md) — análisis STRIDE por feature crítica (cuando aplique).
-- [secrets-management.md](secrets-management.md) — detalle de rotación (cuando aplique).
+- Threat model — opt-in (ver README § Metodología aplicada): análisis STRIDE por feature crítica cuando aplique.
+- Gestión de secretos — secrets fuera del repo: detalle de rotación cuando aplique.
