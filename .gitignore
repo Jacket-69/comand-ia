@@ -95,8 +95,7 @@ ehthumbs_vista.db
 tmp/
 .tmp/
 
-# ──────────────── Contratos para agentes IA (local-only) ────────────────
-# Cómo le hablamos al modelo no es asunto del repo público. Viven en disco
-# de cada dev pero no se traquean ni se publican.
-AGENTS.md
+# ──────────────── Contrato para agentes IA (local-only) ────────────────
+# Cómo le hablamos al modelo no es asunto del repo público. Vive en disco
+# de cada dev pero no se traquea ni se publica.
 CLAUDE.md
