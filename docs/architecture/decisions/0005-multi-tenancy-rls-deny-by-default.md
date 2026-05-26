@@ -110,5 +110,5 @@ SELECT ok(
 - [SRS § 4.5 Security](../../requirements/srs.md) — RNF-SEC-001..005.
 - [SRS § 5 Casos de aceptación](../../requirements/srs.md) — CA-002, CA-007, CA-104.
 - [Database RLS](../../database/rls.md), [Database Model](../../database/model.md).
-- [Security baseline](../../security/security.md), [Threat model](../../security/threat-model.md).
+- [Security baseline](../../security/security.md), threat model (opt-in).
 - ADRs relacionados: [ADR-0002](0002-supabase-baas-backend.md).
