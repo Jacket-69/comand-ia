@@ -17,7 +17,9 @@ void main(List<String> args) {
 
   final globalMin = _readMin(args, '--global-min', 60);
   final domainMin = _readMin(args, '--domain-min', 70);
-  final records = _parseLcov(file.readAsLinesSync());
+  final records = _parseLcov(
+    file.readAsLinesSync(),
+  ).where((record) => !_isGenerated(record.source));
 
   final global = _sum(records);
   final domain = _sum(
@@ -48,6 +50,11 @@ void main(List<String> args) {
     exit(1);
   }
 }
+
+/// El código generado por build_runner (Drift `.g.dart`, freezed, etc.) no se
+/// gatea por cobertura: es derivado, no escrito a mano.
+bool _isGenerated(String source) =>
+    source.endsWith('.g.dart') || source.endsWith('.freezed.dart');
 
 double _readMin(List<String> args, String name, double fallback) {
   final prefix = '$name=';
