@@ -49,6 +49,8 @@ El campo `updated_at` se actualiza en Postgres vía trigger `set_updated_at()`. 
 
 `pending_op` **no existe en el schema Postgres**. Solo vive en Drift. Verificado por test pgTAP (`supabase/tests/`).
 
+La implementación del modelo local Drift (tabla `PendingOps` y los repositorios de menú, mesas, pedidos e ítems) vive en `lib/features/orders/data/local/`. El spike de COMA-004 en `lib/core/local/spike_db.dart` queda preservado como referencia de validación de Drift en web.
+
 ## Backoff y notificación
 
 - Backoff exponencial: `2^attempts` segundos, con cap en 5 min.
