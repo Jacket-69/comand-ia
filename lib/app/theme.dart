@@ -79,7 +79,7 @@ class AppTheme {
       ),
       textTheme: textTheme,
       scaffoldBackgroundColor: background,
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: cardBackground,
         elevation: 2,
         shape: RoundedRectangleBorder(
