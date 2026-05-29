@@ -182,6 +182,47 @@ void main() {
     });
   });
 
+  group('updateStatus', () {
+    test('cambia el status del pedido a sent', () async {
+      final order = await repo.createOrder(
+        venueId: 'venue-A',
+        diningTableId: 'table-1',
+      );
+      expect(order.status, OrderStatus.open);
+
+      final updated = await repo.updateStatus(order.id, OrderStatus.sent);
+      expect(updated.status, OrderStatus.sent);
+
+      // Verificación en BD
+      final fromDb = await repo.orderById(order.id);
+      expect(fromDb!.status, OrderStatus.sent);
+    });
+
+    test('lanza ArgumentError para id inexistente', () async {
+      await expectLater(
+        repo.updateStatus('no-existe', OrderStatus.sent),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test(
+      'lanza StateError al intentar modificar pedido cerrado (ACID-4)',
+      () async {
+        final order = await repo.createOrder(
+          venueId: 'venue-A',
+          diningTableId: 'table-1',
+        );
+        // Llevar a closed directamente (estado terminal)
+        await repo.updateStatus(order.id, OrderStatus.closed);
+
+        await expectLater(
+          repo.updateStatus(order.id, OrderStatus.sent),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+  });
+
   group('watchOpenOrders', () {
     test('emite pedidos abiertos del venue', () async {
       await repo.createOrder(venueId: 'venue-A', diningTableId: 'table-1');

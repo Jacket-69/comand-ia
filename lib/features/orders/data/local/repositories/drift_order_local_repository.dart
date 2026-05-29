@@ -116,6 +116,29 @@ class DriftOrderLocalRepository implements OrderLocalRepository {
         .map((rows) => rows.map(customerOrderFromRow).toList());
   }
 
+  @override
+  Future<CustomerOrder> updateStatus(String orderId, OrderStatus status) async {
+    // ACID-4: el estado `closed` es terminal; no se puede modificar.
+    final current = await orderById(orderId);
+    if (current == null) {
+      throw ArgumentError('Pedido no encontrado: $orderId');
+    }
+    if (current.status == OrderStatus.closed) {
+      throw StateError(
+        'El pedido $orderId está cerrado (ACID-4); no se puede cambiar su estado.',
+      );
+    }
+
+    await (_db.update(_db.customerOrders)..where(
+      (t) => t.id.equals(orderId),
+    )).write(CustomerOrdersCompanion(status: Value(status.toDb())));
+
+    final row =
+        await (_db.select(_db.customerOrders)
+          ..where((t) => t.id.equals(orderId))).getSingle();
+    return customerOrderFromRow(row);
+  }
+
   /// Recalcula [CustomerOrderRow.totalCents] = SUM(priceCentsSnapshot × quantity)
   /// de ítems con status != cancelled. Espejo del trigger Postgres.
   Future<void> _recalculateTotal(String orderId) async {
