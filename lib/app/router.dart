@@ -1,5 +1,6 @@
 import 'package:comand_ia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:comand_ia/features/auth/presentation/screens/login_screen.dart';
+import 'package:comand_ia/features/orders/presentation/screens/order_screen.dart';
 import 'package:comand_ia/features/orders/presentation/screens/table_grid_screen.dart';
 import 'package:comand_ia/features/spike/presentation/screens/spike_screen.dart';
 import 'package:flutter/material.dart';
@@ -63,9 +64,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'order',
         builder: (context, state) {
           final tableId = state.pathParameters['tableId'] ?? '';
-          return Scaffold(
-            body: Center(child: Text('Pedido mesa $tableId - Sprint 2')),
-          );
+          return OrderScreen(tableId: tableId);
         },
       ),
       GoRoute(

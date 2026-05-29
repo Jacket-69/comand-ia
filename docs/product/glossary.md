@@ -75,6 +75,8 @@
 | **pending_op** | Operación pendiente de sincronización con Supabase (cola FIFO local en Drift). **No existe en Supabase.** |
 | **LWW** | Last Write Wins — política de resolución de conflictos por `updated_at` server-side. Ver [sync/offline-first.md](../sync/offline-first.md). |
 | **Drift** | ORM type-safe para Flutter con soporte SQLite (nativo) e IndexedDB (web). Persistencia local de la app. |
+| **dev_seed** | Conjunto de datos de desarrollo (mesas, categorías, ítems de menú) sembrado en Drift local al arrancar la app mientras la sync remota (COMA-008) no existe. Idempotente: no re-siembra si ya hay datos. Vive en `lib/features/orders/data/local/seed/dev_seed.dart`. |
+| **order_draft** | Borrador del pedido mantenido en memoria por `OrderDraftController` mientras el garzón agrega/edita ítems antes de confirmar. No persiste en Drift hasta llamar `confirm()`. |
 
 ### Otros
 

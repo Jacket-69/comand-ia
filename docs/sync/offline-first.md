@@ -51,6 +51,17 @@ El campo `updated_at` se actualiza en Postgres vía trigger `set_updated_at()`. 
 
 La implementación del modelo local Drift (tabla `PendingOps` y los repositorios de menú, mesas, pedidos e ítems) vive en `lib/features/orders/data/local/`. El spike de COMA-004 en `lib/core/local/spike_db.dart` queda preservado como referencia de validación de Drift en web.
 
+## Seed de dev (pre-COMA-008)
+
+Mientras la sync remota (COMA-008) no esté implementada, el menú local se puebla mediante un seed idempotente de dev al arrancar la app:
+
+- **Archivo:** `lib/features/orders/data/local/seed/dev_seed.dart`
+- **Provider:** `devSeedProvider` (FutureProvider, idempotente: no re-siembra si ya hay categorías para el venue).
+- **venueId seedado:** `venue-001-mock` (coincide con el mock de auth, definido en `MockAuthRepository`).
+- **Contenido:** 20 mesas (ids `"1".."20"`), 6 categorías (Entradas, Almuerzos, Parrilladas, Bebidas, Postres, Café) y ~29 ítems con precios realistas en CLP (centavos, sin floats).
+- **Activación:** `lib/app/app.dart` llama `ref.watch(devSeedProvider)` al arrancar. La pantalla de pedido (`OrderScreen`) también espera al seed antes de mostrar el menú.
+- **Eliminación:** al mergearse COMA-008 (sync remota), el seed se reemplaza por la sincronización real desde Supabase. El provider `devSeedProvider` se elimina o se convierte en un paso de inicialización condicional.
+
 ## Backoff y notificación
 
 - Backoff exponencial: `2^attempts` segundos, con cap en 5 min.

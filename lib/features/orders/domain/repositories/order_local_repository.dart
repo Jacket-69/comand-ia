@@ -39,4 +39,11 @@ abstract class OrderLocalRepository {
 
   /// Stream reactivo de pedidos abiertos de un venue, ordenados por apertura.
   Stream<List<CustomerOrder>> watchOpenOrders(String venueId);
+
+  /// Actualiza el estado de un pedido y retorna el pedido actualizado.
+  ///
+  /// Usar para la transición `open → sent` al confirmar el pedido desde la
+  /// pantalla de toma de pedido (COMA-007). El estado `closed` es terminal
+  /// y no se puede modificar (ACID-4) — hacer cumplir a nivel de repo.
+  Future<CustomerOrder> updateStatus(String orderId, OrderStatus status);
 }
