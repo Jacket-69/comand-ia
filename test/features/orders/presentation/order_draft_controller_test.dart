@@ -35,6 +35,7 @@ const _item1 = MenuItem(
   venueId: kVenueId,
   categoryId: 'cat-1',
   name: 'Hamburguesa Clásica',
+  description: 'Hamburguesa clásica de vacuno',
   priceCents: 1500000, // $15.000 CLP
 );
 
@@ -43,6 +44,7 @@ const _item2 = MenuItem(
   venueId: kVenueId,
   categoryId: 'cat-1',
   name: 'Bebida',
+  description: 'Bebida refrescante',
   priceCents: 180000, // $1.800 CLP
 );
 

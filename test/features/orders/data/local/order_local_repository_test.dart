@@ -25,6 +25,7 @@ void main() {
     venueId: 'venue-A',
     categoryId: 'cat-1',
     name: 'Hamburguesa Clásica',
+    description: 'Rica hamburguesa de vacuno',
     priceCents: 5900,
   );
 
@@ -33,6 +34,7 @@ void main() {
     venueId: 'venue-A',
     categoryId: 'cat-1',
     name: 'Coca-Cola 350ml',
+    description: 'Refresco en lata',
     priceCents: 1500,
   );
 

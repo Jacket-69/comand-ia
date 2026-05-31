@@ -56,6 +56,7 @@ void main() {
         venueId: 'venue-1',
         categoryId: 'cat-1',
         name: 'Empanada de Pino',
+        description: 'Empanada frita con pino de vacuno.',
         priceCents: 2500,
         active: true,
         imageUrl: 'https://example.com/empanada.jpg',

@@ -50,6 +50,7 @@ void main() {
       venueId: 'venue-1',
       categoryId: 'cat-1',
       name: 'Coca-Cola',
+      description: 'Bebida refrescante',
       priceCents: 1500,
     );
 
@@ -64,6 +65,7 @@ void main() {
         'venue-1',
         'cat-1',
         'Coca-Cola',
+        'Bebida refrescante',
         1500,
         true, // active
         null, // imageUrl
@@ -78,6 +80,7 @@ void main() {
         venueId: 'venue-1',
         categoryId: 'cat-1',
         name: 'Coca-Cola',
+        description: 'Bebida refrescante',
         priceCents: 1500,
       );
       expect(item, equals(same));

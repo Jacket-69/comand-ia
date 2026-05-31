@@ -36,6 +36,7 @@ const _item1 = MenuItem(
   venueId: kVenueId,
   categoryId: 'wcat-1',
   name: 'Ceviche de Reineta',
+  description: 'Ceviche fresco de reineta',
   priceCents: 450000,
 );
 
@@ -44,6 +45,7 @@ const _item2 = MenuItem(
   venueId: kVenueId,
   categoryId: 'wcat-1',
   name: 'Empanada de Pino',
+  description: 'Empanada frita',
   priceCents: 280000,
 );
 
@@ -119,7 +121,7 @@ void main() {
 
     // Añadir Ceviche (450000 centavos = $4.500)
     // Buscar el botón + del ítem
-    final addButtons = find.byIcon(Icons.add_circle);
+    final addButtons = find.byIcon(Icons.add);
     expect(addButtons, findsWidgets);
     await tester.tap(addButtons.first);
     await tester.pump();
