@@ -44,6 +44,9 @@ class MenuItems extends Table {
   /// Nombre del ítem.
   TextColumn get name => text()();
 
+  /// Descripción del ítem.
+  TextColumn get description => text()();
+
   /// Precio en centavos (CLP × 100). Nunca float.
   IntColumn get priceCents => integer()();
 

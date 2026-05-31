@@ -341,6 +341,7 @@ MenuItem _item(
     venueId: kMockVenueId,
     categoryId: category.id,
     name: name,
+    description: description,
     priceCents: priceCents,
     sortOrder: sortOrder,
     // imageUrl: null — sin imágenes en dev seed

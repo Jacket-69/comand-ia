@@ -359,108 +359,115 @@ class _MenuItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Info del ítem
+            // Imagen del plato a la izquierda con bordes redondeados
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child:
+                  item.imageUrl != null
+                      ? Image.network(
+                        item.imageUrl!,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                      )
+                      : Container(
+                        width: 80,
+                        height: 80,
+                        color: AppTheme.surface,
+                        child: const Icon(
+                          Icons.restaurant,
+                          color: AppTheme.textSecondary,
+                          size: 32,
+                        ),
+                      ),
+            ),
+            const SizedBox(width: 12),
+
+            // Información central: Nombre, Descripción y Precio
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     item.name,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
+                    item.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
                     formatClp(item.priceCents),
-                    style: TextStyle(
-                      color: AppTheme.primary,
+                    style: const TextStyle(
+                      color: AppTheme.primary, // Verde
                       fontWeight: FontWeight.w700,
-                      fontSize: 14,
+                      fontSize: 16,
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 12),
 
-            // Stepper o botón +
+            // Botón de acción a la derecha (Botón circular azul o stepper completo)
             if (line == null || line!.quantity == 0)
-              // Botón + (min 44px de tap target)
-              SizedBox(
-                width: 44,
-                height: 44,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.add_circle,
-                    color: AppTheme.primary,
-                    size: 28,
-                  ),
-                  onPressed: onAdd,
-                  tooltip: 'Agregar ${item.name}',
-                  padding: EdgeInsets.zero,
+              IconButton.filled(
+                style: IconButton.styleFrom(
+                  backgroundColor: AppTheme.primary, // Azul
+                  minimumSize: const Size(40, 40),
                 ),
+                icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                onPressed: onAdd,
+                tooltip: 'Agregar ${item.name}',
               )
             else
-              // Stepper − N + ✕
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Botón −
-                  SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, size: 24),
-                      onPressed: onDecrement,
-                      tooltip: 'Reducir cantidad',
-                      padding: EdgeInsets.zero,
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline, size: 22),
+                    onPressed: onDecrement,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${line!.quantity}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
                     ),
                   ),
-                  // Cantidad
-                  SizedBox(
-                    width: 28,
-                    child: Text(
-                      '${line!.quantity}',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.add_circle,
+                      color: AppTheme.primary,
+                      size: 22,
                     ),
-                  ),
-                  // Botón +
-                  SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.add_circle_outline,
-                        size: 24,
-                        color: AppTheme.primary,
-                      ),
-                      onPressed: onIncrement,
-                      tooltip: 'Aumentar cantidad',
-                      padding: EdgeInsets.zero,
-                    ),
-                  ),
-                  // Botón ✕
-                  SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        size: 20,
-                        color: AppTheme.error,
-                      ),
-                      onPressed: onRemove,
-                      tooltip: 'Eliminar ${item.name}',
-                      padding: EdgeInsets.zero,
-                    ),
+                    onPressed: onIncrement,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),

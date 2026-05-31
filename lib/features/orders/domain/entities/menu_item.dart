@@ -10,6 +10,7 @@ class MenuItem extends Equatable {
     required this.venueId,
     required this.categoryId,
     required this.name,
+    required this.description,
     required this.priceCents,
     this.active = true,
     this.imageUrl,
@@ -28,6 +29,9 @@ class MenuItem extends Equatable {
 
   /// Nombre del ítem.
   final String name;
+
+  /// Descripción del ítem.
+  final String description;
 
   /// Precio en centavos (CLP × 100). Nunca float.
   final int priceCents;
@@ -50,6 +54,7 @@ class MenuItem extends Equatable {
     venueId,
     categoryId,
     name,
+    description,
     priceCents,
     active,
     imageUrl,

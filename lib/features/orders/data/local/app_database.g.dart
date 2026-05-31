@@ -472,6 +472,17 @@ class $MenuItemsTable extends MenuItems
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _priceCentsMeta = const VerificationMeta(
     'priceCents',
   );
@@ -536,6 +547,7 @@ class $MenuItemsTable extends MenuItems
     venueId,
     categoryId,
     name,
+    description,
     priceCents,
     active,
     imageUrl,
@@ -582,6 +594,17 @@ class $MenuItemsTable extends MenuItems
       );
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_descriptionMeta);
     }
     if (data.containsKey('price_cents')) {
       context.handle(
@@ -644,6 +667,11 @@ class $MenuItemsTable extends MenuItems
             DriftSqlType.string,
             data['${effectivePrefix}name'],
           )!,
+      description:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}description'],
+          )!,
       priceCents:
           attachedDatabase.typeMapping.read(
             DriftSqlType.int,
@@ -689,6 +717,9 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
   /// Nombre del ítem.
   final String name;
 
+  /// Descripción del ítem.
+  final String description;
+
   /// Precio en centavos (CLP × 100). Nunca float.
   final int priceCents;
 
@@ -708,6 +739,7 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
     required this.venueId,
     required this.categoryId,
     required this.name,
+    required this.description,
     required this.priceCents,
     required this.active,
     this.imageUrl,
@@ -721,6 +753,7 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
     map['venue_id'] = Variable<String>(venueId);
     map['category_id'] = Variable<String>(categoryId);
     map['name'] = Variable<String>(name);
+    map['description'] = Variable<String>(description);
     map['price_cents'] = Variable<int>(priceCents);
     map['active'] = Variable<bool>(active);
     if (!nullToAbsent || imageUrl != null) {
@@ -739,6 +772,7 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
       venueId: Value(venueId),
       categoryId: Value(categoryId),
       name: Value(name),
+      description: Value(description),
       priceCents: Value(priceCents),
       active: Value(active),
       imageUrl:
@@ -763,6 +797,7 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
       venueId: serializer.fromJson<String>(json['venueId']),
       categoryId: serializer.fromJson<String>(json['categoryId']),
       name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String>(json['description']),
       priceCents: serializer.fromJson<int>(json['priceCents']),
       active: serializer.fromJson<bool>(json['active']),
       imageUrl: serializer.fromJson<String?>(json['imageUrl']),
@@ -778,6 +813,7 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
       'venueId': serializer.toJson<String>(venueId),
       'categoryId': serializer.toJson<String>(categoryId),
       'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String>(description),
       'priceCents': serializer.toJson<int>(priceCents),
       'active': serializer.toJson<bool>(active),
       'imageUrl': serializer.toJson<String?>(imageUrl),
@@ -791,6 +827,7 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
     String? venueId,
     String? categoryId,
     String? name,
+    String? description,
     int? priceCents,
     bool? active,
     Value<String?> imageUrl = const Value.absent(),
@@ -801,6 +838,7 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
     venueId: venueId ?? this.venueId,
     categoryId: categoryId ?? this.categoryId,
     name: name ?? this.name,
+    description: description ?? this.description,
     priceCents: priceCents ?? this.priceCents,
     active: active ?? this.active,
     imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
@@ -814,6 +852,8 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
       categoryId:
           data.categoryId.present ? data.categoryId.value : this.categoryId,
       name: data.name.present ? data.name.value : this.name,
+      description:
+          data.description.present ? data.description.value : this.description,
       priceCents:
           data.priceCents.present ? data.priceCents.value : this.priceCents,
       active: data.active.present ? data.active.value : this.active,
@@ -830,6 +870,7 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
           ..write('venueId: $venueId, ')
           ..write('categoryId: $categoryId, ')
           ..write('name: $name, ')
+          ..write('description: $description, ')
           ..write('priceCents: $priceCents, ')
           ..write('active: $active, ')
           ..write('imageUrl: $imageUrl, ')
@@ -845,6 +886,7 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
     venueId,
     categoryId,
     name,
+    description,
     priceCents,
     active,
     imageUrl,
@@ -859,6 +901,7 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
           other.venueId == this.venueId &&
           other.categoryId == this.categoryId &&
           other.name == this.name &&
+          other.description == this.description &&
           other.priceCents == this.priceCents &&
           other.active == this.active &&
           other.imageUrl == this.imageUrl &&
@@ -871,6 +914,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItemRow> {
   final Value<String> venueId;
   final Value<String> categoryId;
   final Value<String> name;
+  final Value<String> description;
   final Value<int> priceCents;
   final Value<bool> active;
   final Value<String?> imageUrl;
@@ -882,6 +926,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItemRow> {
     this.venueId = const Value.absent(),
     this.categoryId = const Value.absent(),
     this.name = const Value.absent(),
+    this.description = const Value.absent(),
     this.priceCents = const Value.absent(),
     this.active = const Value.absent(),
     this.imageUrl = const Value.absent(),
@@ -894,6 +939,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItemRow> {
     required String venueId,
     required String categoryId,
     required String name,
+    required String description,
     required int priceCents,
     this.active = const Value.absent(),
     this.imageUrl = const Value.absent(),
@@ -904,12 +950,14 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItemRow> {
        venueId = Value(venueId),
        categoryId = Value(categoryId),
        name = Value(name),
+       description = Value(description),
        priceCents = Value(priceCents);
   static Insertable<MenuItemRow> custom({
     Expression<String>? id,
     Expression<String>? venueId,
     Expression<String>? categoryId,
     Expression<String>? name,
+    Expression<String>? description,
     Expression<int>? priceCents,
     Expression<bool>? active,
     Expression<String>? imageUrl,
@@ -922,6 +970,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItemRow> {
       if (venueId != null) 'venue_id': venueId,
       if (categoryId != null) 'category_id': categoryId,
       if (name != null) 'name': name,
+      if (description != null) 'description': description,
       if (priceCents != null) 'price_cents': priceCents,
       if (active != null) 'active': active,
       if (imageUrl != null) 'image_url': imageUrl,
@@ -936,6 +985,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItemRow> {
     Value<String>? venueId,
     Value<String>? categoryId,
     Value<String>? name,
+    Value<String>? description,
     Value<int>? priceCents,
     Value<bool>? active,
     Value<String?>? imageUrl,
@@ -948,6 +998,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItemRow> {
       venueId: venueId ?? this.venueId,
       categoryId: categoryId ?? this.categoryId,
       name: name ?? this.name,
+      description: description ?? this.description,
       priceCents: priceCents ?? this.priceCents,
       active: active ?? this.active,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -971,6 +1022,9 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItemRow> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
     }
     if (priceCents.present) {
       map['price_cents'] = Variable<int>(priceCents.value);
@@ -1000,6 +1054,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItemRow> {
           ..write('venueId: $venueId, ')
           ..write('categoryId: $categoryId, ')
           ..write('name: $name, ')
+          ..write('description: $description, ')
           ..write('priceCents: $priceCents, ')
           ..write('active: $active, ')
           ..write('imageUrl: $imageUrl, ')
@@ -3505,6 +3560,7 @@ typedef $$MenuItemsTableCreateCompanionBuilder =
       required String venueId,
       required String categoryId,
       required String name,
+      required String description,
       required int priceCents,
       Value<bool> active,
       Value<String?> imageUrl,
@@ -3518,6 +3574,7 @@ typedef $$MenuItemsTableUpdateCompanionBuilder =
       Value<String> venueId,
       Value<String> categoryId,
       Value<String> name,
+      Value<String> description,
       Value<int> priceCents,
       Value<bool> active,
       Value<String?> imageUrl,
@@ -3552,6 +3609,11 @@ class $$MenuItemsTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3610,6 +3672,11 @@ class $$MenuItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get priceCents => $composableBuilder(
     column: $table.priceCents,
     builder: (column) => ColumnOrderings(column),
@@ -3658,6 +3725,11 @@ class $$MenuItemsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get priceCents => $composableBuilder(
     column: $table.priceCents,
@@ -3712,6 +3784,7 @@ class $$MenuItemsTableTableManager
                 Value<String> venueId = const Value.absent(),
                 Value<String> categoryId = const Value.absent(),
                 Value<String> name = const Value.absent(),
+                Value<String> description = const Value.absent(),
                 Value<int> priceCents = const Value.absent(),
                 Value<bool> active = const Value.absent(),
                 Value<String?> imageUrl = const Value.absent(),
@@ -3723,6 +3796,7 @@ class $$MenuItemsTableTableManager
                 venueId: venueId,
                 categoryId: categoryId,
                 name: name,
+                description: description,
                 priceCents: priceCents,
                 active: active,
                 imageUrl: imageUrl,
@@ -3736,6 +3810,7 @@ class $$MenuItemsTableTableManager
                 required String venueId,
                 required String categoryId,
                 required String name,
+                required String description,
                 required int priceCents,
                 Value<bool> active = const Value.absent(),
                 Value<String?> imageUrl = const Value.absent(),
@@ -3747,6 +3822,7 @@ class $$MenuItemsTableTableManager
                 venueId: venueId,
                 categoryId: categoryId,
                 name: name,
+                description: description,
                 priceCents: priceCents,
                 active: active,
                 imageUrl: imageUrl,

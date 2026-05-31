@@ -99,3 +99,6 @@ tmp/
 # Cómo le hablamos al modelo no es asunto del repo público. Vive en disco
 # de cada dev pero no se traquea ni se publica.
 CLAUDE.md
+
+# ──────────────── Node / JS ────────────────
+node_modules/
