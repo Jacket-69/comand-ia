@@ -33,19 +33,19 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            // Borramos las tablas viejas para que se vuelvan a crear con la columna 'description'
-            await m.deleteTable('menu_categories');
-            await m.deleteTable('menu_items');
-            await m.deleteTable('dining_tables');
-            await m.deleteTable('customer_orders');
-            await m.deleteTable('order_items');
-            await m.deleteTable('pending_ops');
-            await m.createAll();
-          }
-        },
-      );
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        // Borramos las tablas viejas para que se vuelvan a crear con la columna 'description'
+        await m.deleteTable('menu_categories');
+        await m.deleteTable('menu_items');
+        await m.deleteTable('dining_tables');
+        await m.deleteTable('customer_orders');
+        await m.deleteTable('order_items');
+        await m.deleteTable('pending_ops');
+        await m.createAll();
+      }
+    },
+  );
 }
 
 /// Abre la conexión según plataforma (web = IndexedDB vía WASM; nativo = SQLite).
