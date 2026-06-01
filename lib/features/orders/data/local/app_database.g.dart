@@ -1651,6 +1651,18 @@ class $CustomerOrdersTable extends CustomerOrders
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _tipCentsMeta = const VerificationMeta(
+    'tipCents',
+  );
+  @override
+  late final GeneratedColumn<int> tipCents = GeneratedColumn<int>(
+    'tip_cents',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -1674,6 +1686,7 @@ class $CustomerOrdersTable extends CustomerOrders
     totalCents,
     paymentMethod,
     notes,
+    tipCents,
     updatedAt,
   ];
   @override
@@ -1759,6 +1772,12 @@ class $CustomerOrdersTable extends CustomerOrders
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('tip_cents')) {
+      context.handle(
+        _tipCentsMeta,
+        tipCents.isAcceptableOrUnknown(data['tip_cents']!, _tipCentsMeta),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -1820,6 +1839,11 @@ class $CustomerOrdersTable extends CustomerOrders
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      tipCents:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}tip_cents'],
+          )!,
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -1865,6 +1889,12 @@ class CustomerOrderRow extends DataClass
   /// Notas libres opcionales.
   final String? notes;
 
+  /// Propina en centavos (CLP × 100). Separada de [totalCents] — ACID-3:
+  /// el total del pedido nunca incluye la propina; son campos independientes.
+  /// Default 0 para que el ALTER ADD COLUMN de la migración v2→v3 sea válido
+  /// sobre filas preexistentes (SQLite exige default en columnas NOT NULL nuevas).
+  final int tipCents;
+
   /// Timestamp del servidor (LWW). Nullable hasta que haya sync.
   final DateTime? updatedAt;
   const CustomerOrderRow({
@@ -1878,6 +1908,7 @@ class CustomerOrderRow extends DataClass
     required this.totalCents,
     this.paymentMethod,
     this.notes,
+    required this.tipCents,
     this.updatedAt,
   });
   @override
@@ -1901,6 +1932,7 @@ class CustomerOrderRow extends DataClass
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    map['tip_cents'] = Variable<int>(tipCents);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
     }
@@ -1929,6 +1961,7 @@ class CustomerOrderRow extends DataClass
               : Value(paymentMethod),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      tipCents: Value(tipCents),
       updatedAt:
           updatedAt == null && nullToAbsent
               ? const Value.absent()
@@ -1952,6 +1985,7 @@ class CustomerOrderRow extends DataClass
       totalCents: serializer.fromJson<int>(json['totalCents']),
       paymentMethod: serializer.fromJson<String?>(json['paymentMethod']),
       notes: serializer.fromJson<String?>(json['notes']),
+      tipCents: serializer.fromJson<int>(json['tipCents']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
@@ -1969,6 +2003,7 @@ class CustomerOrderRow extends DataClass
       'totalCents': serializer.toJson<int>(totalCents),
       'paymentMethod': serializer.toJson<String?>(paymentMethod),
       'notes': serializer.toJson<String?>(notes),
+      'tipCents': serializer.toJson<int>(tipCents),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
@@ -1984,6 +2019,7 @@ class CustomerOrderRow extends DataClass
     int? totalCents,
     Value<String?> paymentMethod = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    int? tipCents,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => CustomerOrderRow(
     id: id ?? this.id,
@@ -1997,6 +2033,7 @@ class CustomerOrderRow extends DataClass
     paymentMethod:
         paymentMethod.present ? paymentMethod.value : this.paymentMethod,
     notes: notes.present ? notes.value : this.notes,
+    tipCents: tipCents ?? this.tipCents,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   CustomerOrderRow copyWithCompanion(CustomerOrdersCompanion data) {
@@ -2018,6 +2055,7 @@ class CustomerOrderRow extends DataClass
               ? data.paymentMethod.value
               : this.paymentMethod,
       notes: data.notes.present ? data.notes.value : this.notes,
+      tipCents: data.tipCents.present ? data.tipCents.value : this.tipCents,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -2035,6 +2073,7 @@ class CustomerOrderRow extends DataClass
           ..write('totalCents: $totalCents, ')
           ..write('paymentMethod: $paymentMethod, ')
           ..write('notes: $notes, ')
+          ..write('tipCents: $tipCents, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -2052,6 +2091,7 @@ class CustomerOrderRow extends DataClass
     totalCents,
     paymentMethod,
     notes,
+    tipCents,
     updatedAt,
   );
   @override
@@ -2068,6 +2108,7 @@ class CustomerOrderRow extends DataClass
           other.totalCents == this.totalCents &&
           other.paymentMethod == this.paymentMethod &&
           other.notes == this.notes &&
+          other.tipCents == this.tipCents &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -2082,6 +2123,7 @@ class CustomerOrdersCompanion extends UpdateCompanion<CustomerOrderRow> {
   final Value<int> totalCents;
   final Value<String?> paymentMethod;
   final Value<String?> notes;
+  final Value<int> tipCents;
   final Value<DateTime?> updatedAt;
   final Value<int> rowid;
   const CustomerOrdersCompanion({
@@ -2095,6 +2137,7 @@ class CustomerOrdersCompanion extends UpdateCompanion<CustomerOrderRow> {
     this.totalCents = const Value.absent(),
     this.paymentMethod = const Value.absent(),
     this.notes = const Value.absent(),
+    this.tipCents = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -2109,6 +2152,7 @@ class CustomerOrdersCompanion extends UpdateCompanion<CustomerOrderRow> {
     this.totalCents = const Value.absent(),
     this.paymentMethod = const Value.absent(),
     this.notes = const Value.absent(),
+    this.tipCents = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -2126,6 +2170,7 @@ class CustomerOrdersCompanion extends UpdateCompanion<CustomerOrderRow> {
     Expression<int>? totalCents,
     Expression<String>? paymentMethod,
     Expression<String>? notes,
+    Expression<int>? tipCents,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
@@ -2140,6 +2185,7 @@ class CustomerOrdersCompanion extends UpdateCompanion<CustomerOrderRow> {
       if (totalCents != null) 'total_cents': totalCents,
       if (paymentMethod != null) 'payment_method': paymentMethod,
       if (notes != null) 'notes': notes,
+      if (tipCents != null) 'tip_cents': tipCents,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -2156,6 +2202,7 @@ class CustomerOrdersCompanion extends UpdateCompanion<CustomerOrderRow> {
     Value<int>? totalCents,
     Value<String?>? paymentMethod,
     Value<String?>? notes,
+    Value<int>? tipCents,
     Value<DateTime?>? updatedAt,
     Value<int>? rowid,
   }) {
@@ -2170,6 +2217,7 @@ class CustomerOrdersCompanion extends UpdateCompanion<CustomerOrderRow> {
       totalCents: totalCents ?? this.totalCents,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       notes: notes ?? this.notes,
+      tipCents: tipCents ?? this.tipCents,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -2208,6 +2256,9 @@ class CustomerOrdersCompanion extends UpdateCompanion<CustomerOrderRow> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (tipCents.present) {
+      map['tip_cents'] = Variable<int>(tipCents.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -2230,6 +2281,7 @@ class CustomerOrdersCompanion extends UpdateCompanion<CustomerOrderRow> {
           ..write('totalCents: $totalCents, ')
           ..write('paymentMethod: $paymentMethod, ')
           ..write('notes: $notes, ')
+          ..write('tipCents: $tipCents, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -4122,6 +4174,7 @@ typedef $$CustomerOrdersTableCreateCompanionBuilder =
       Value<int> totalCents,
       Value<String?> paymentMethod,
       Value<String?> notes,
+      Value<int> tipCents,
       Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
@@ -4137,6 +4190,7 @@ typedef $$CustomerOrdersTableUpdateCompanionBuilder =
       Value<int> totalCents,
       Value<String?> paymentMethod,
       Value<String?> notes,
+      Value<int> tipCents,
       Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
@@ -4197,6 +4251,11 @@ class $$CustomerOrdersTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tipCents => $composableBuilder(
+    column: $table.tipCents,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4265,6 +4324,11 @@ class $$CustomerOrdersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get tipCents => $composableBuilder(
+    column: $table.tipCents,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -4315,6 +4379,9 @@ class $$CustomerOrdersTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<int> get tipCents =>
+      $composableBuilder(column: $table.tipCents, builder: (column) => column);
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
@@ -4371,6 +4438,7 @@ class $$CustomerOrdersTableTableManager
                 Value<int> totalCents = const Value.absent(),
                 Value<String?> paymentMethod = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<int> tipCents = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CustomerOrdersCompanion(
@@ -4384,6 +4452,7 @@ class $$CustomerOrdersTableTableManager
                 totalCents: totalCents,
                 paymentMethod: paymentMethod,
                 notes: notes,
+                tipCents: tipCents,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -4399,6 +4468,7 @@ class $$CustomerOrdersTableTableManager
                 Value<int> totalCents = const Value.absent(),
                 Value<String?> paymentMethod = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<int> tipCents = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CustomerOrdersCompanion.insert(
@@ -4412,6 +4482,7 @@ class $$CustomerOrdersTableTableManager
                 totalCents: totalCents,
                 paymentMethod: paymentMethod,
                 notes: notes,
+                tipCents: tipCents,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),

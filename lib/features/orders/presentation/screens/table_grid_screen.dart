@@ -39,6 +39,7 @@ class TableData {
     required this.status,
     this.indicator = OrderIndicator.none,
     this.orderTotal = 0,
+    this.orderId,
   });
 
   final String id;
@@ -48,6 +49,9 @@ class TableData {
 
   /// Total del pedido en centavos (0 si libre).
   final int orderTotal;
+
+  /// UUID del pedido activo (null si la mesa está libre).
+  final String? orderId;
 }
 
 /// Convierte un [TableView] al modelo visual [TableData] usado por el grid.
@@ -87,6 +91,7 @@ TableData _toTableData(TableView view) {
     status: TableStatus.withOrder,
     indicator: indicator,
     orderTotal: view.totalCents,
+    orderId: view.orderId,
   );
 }
 
@@ -343,7 +348,12 @@ class _TableCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          context.go('/order/${table.id}');
+          // Mesa con pedido activo → cobrar cuenta; mesa libre → nueva toma.
+          if (table.status == TableStatus.withOrder && table.orderId != null) {
+            context.go('/checkout/${table.orderId}');
+          } else {
+            context.go('/order/${table.id}');
+          }
         },
         borderRadius: BorderRadius.circular(AppTheme.borderRadius),
         child: AnimatedContainer(

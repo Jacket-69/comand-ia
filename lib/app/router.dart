@@ -1,5 +1,6 @@
 import 'package:comand_ia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:comand_ia/features/auth/presentation/screens/login_screen.dart';
+import 'package:comand_ia/features/orders/presentation/screens/checkout_screen.dart';
 import 'package:comand_ia/features/orders/presentation/screens/kitchen_screen.dart';
 import 'package:comand_ia/features/orders/presentation/screens/order_screen.dart';
 import 'package:comand_ia/features/orders/presentation/screens/table_grid_screen.dart';
@@ -15,6 +16,7 @@ abstract final class AppRoutes {
   static const order = '/order/:tableId';
   static const kitchen = '/kitchen';
   static const dashboard = '/dashboard';
+  static const checkout = '/checkout/:orderId';
 
   /// Spike COMA-004: validación de Drift en Flutter web (IndexedDB).
   /// Pública para poder verificar la persistencia sin auth. Eliminar cuando
@@ -72,6 +74,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.kitchen,
         name: 'kitchen',
         builder: (context, state) => const KitchenScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.checkout,
+        name: 'checkout',
+        builder: (context, state) {
+          final orderId = state.pathParameters['orderId'] ?? '';
+          return CheckoutScreen(orderId: orderId);
+        },
       ),
       GoRoute(
         path: AppRoutes.dashboard,

@@ -29,7 +29,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -39,6 +39,12 @@ class AppDatabase extends _$AppDatabase {
       // pedidos abiertos ni la cola FIFO de sincronización offline (ACID-7).
       if (from < 2) {
         await m.addColumn(menuItems, menuItems.description);
+      }
+      // v2 → v3: agrega 'tip_cents' a customer_orders. Aditivo y no destructivo:
+      // la propina es un campo separado de totalCents (ACID-3). El default 0
+      // garantiza compatibilidad con pedidos preexistentes en SQLite.
+      if (from < 3) {
+        await m.addColumn(customerOrders, customerOrders.tipCents);
       }
     },
   );

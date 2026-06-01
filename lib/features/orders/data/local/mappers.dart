@@ -108,6 +108,7 @@ CustomerOrder customerOrderFromRow(CustomerOrderRow row) => CustomerOrder(
       row.paymentMethod != null
           ? PaymentMethod.fromDb(row.paymentMethod!)
           : null,
+  tipCents: row.tipCents,
   notes: row.notes,
   updatedAt: row.updatedAt,
 );
@@ -124,6 +125,7 @@ CustomerOrdersCompanion customerOrderToCompanion(CustomerOrder entity) =>
       closedAt: Value(entity.closedAt),
       totalCents: Value(entity.totalCents),
       paymentMethod: Value(entity.paymentMethod?.toDb()),
+      tipCents: Value(entity.tipCents),
       notes: Value(entity.notes),
       updatedAt: Value(entity.updatedAt),
     );

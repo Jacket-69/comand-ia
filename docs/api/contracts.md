@@ -44,6 +44,16 @@ El schema canónico vive en:
 2. **[database/model.md](../database/model.md)** — descripción humana de tablas, columnas, invariantes y relaciones.
 3. **`lib/core/db_types.dart`** — tipos Dart generados (espejo del SQL).
 
+### Cambios recientes al schema
+
+#### `0002_tip_cents` (COMA-014)
+
+`customer_order` recibe una columna nueva:
+
+| Columna | Tipo | Default | Constraint | Notas |
+|---|---|---|---|---|
+| `tip_cents` | `INT` | `0` | `CHECK (tip_cents >= 0)` | Propina decidida por el comensal en caja. **Separada de `total_cents`** (ACID-3): `total_cents` = solo ítems; `tip_cents` no entra al total. Se escribe al cerrar la cuenta. |
+
 Si los tres divergen, la migración SQL gana. Hay que regenerar `db_types.dart` y actualizar `model.md` en el mismo PR.
 
 ## RPCs documentadas
