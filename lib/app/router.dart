@@ -1,5 +1,6 @@
 import 'package:comand_ia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:comand_ia/features/auth/presentation/screens/login_screen.dart';
+import 'package:comand_ia/features/orders/presentation/screens/kitchen_screen.dart';
 import 'package:comand_ia/features/orders/presentation/screens/order_screen.dart';
 import 'package:comand_ia/features/orders/presentation/screens/table_grid_screen.dart';
 import 'package:comand_ia/features/spike/presentation/screens/spike_screen.dart';
@@ -70,10 +71,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.kitchen,
         name: 'kitchen',
-        builder:
-            (context, state) => const Scaffold(
-              body: Center(child: Text('KDS Cocina — Sprint 2')),
-            ),
+        builder: (context, state) => const KitchenScreen(),
       ),
       GoRoute(
         path: AppRoutes.dashboard,

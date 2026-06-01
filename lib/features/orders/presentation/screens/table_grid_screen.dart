@@ -1,19 +1,19 @@
 import 'package:comand_ia/app/theme.dart';
+import 'package:comand_ia/core/format.dart';
 import 'package:comand_ia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:comand_ia/features/orders/domain/entities/customer_order.dart';
+import 'package:comand_ia/features/orders/presentation/providers/tables_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Estado de una mesa del local.
+/// Estado visual de una mesa del local.
 enum TableStatus {
   /// Libre — lista para recibir clientes.
   available,
 
   /// Con una orden activa.
   withOrder,
-
-  /// Reservada — no disponible.
-  reserved,
 }
 
 /// Estado del pedido asociado a la mesa (indicador de punto).
@@ -31,14 +31,13 @@ enum OrderIndicator {
   readyToServe,
 }
 
-/// Modelo de datos de una mesa.
+/// Modelo de datos visual de una mesa para el grid.
 class TableData {
   const TableData({
     required this.id,
     required this.number,
     required this.status,
     this.indicator = OrderIndicator.none,
-    this.guestCount = 0,
     this.orderTotal = 0,
   });
 
@@ -46,82 +45,50 @@ class TableData {
   final int number;
   final TableStatus status;
   final OrderIndicator indicator;
-  final int guestCount;
-  final double orderTotal;
+
+  /// Total del pedido en centavos (0 si libre).
+  final int orderTotal;
 }
 
-/// Datos mock de las 20 mesas del local.
-final mockTables = [
-  const TableData(
-    id: '1',
-    number: 1,
+/// Convierte un [TableView] al modelo visual [TableData] usado por el grid.
+///
+/// Mapeo de estados:
+/// - isFree → available, sin indicador.
+/// - ready  → withOrder, indicador readyToServe (punto amarillo).
+/// - open/sent/preparing → withOrder, indicador según estado:
+///     open → waiting (rojo, aún no enviado a cocina).
+///     sent/preparing → active (verde, en curso en cocina).
+TableData _toTableData(TableView view) {
+  final table = view.table;
+  // El número visible se extrae de sortOrder (1-based) o parseando label.
+  final number =
+      table.sortOrder > 0 ? table.sortOrder : int.tryParse(table.id) ?? 0;
+
+  if (view.isFree) {
+    return TableData(
+      id: table.id,
+      number: number,
+      status: TableStatus.available,
+    );
+  }
+
+  final indicator = switch (view.orderStatus) {
+    OrderStatus.ready => OrderIndicator.readyToServe,
+    OrderStatus.open => OrderIndicator.waiting,
+    OrderStatus.sent || OrderStatus.preparing => OrderIndicator.active,
+    // closed/cancelled no deberían llegar (el provider filtra no-cerrados),
+    // pero si llegasen los mostramos como sin indicador.
+    _ => OrderIndicator.none,
+  };
+
+  return TableData(
+    id: table.id,
+    number: number,
     status: TableStatus.withOrder,
-    indicator: OrderIndicator.active,
-    guestCount: 4,
-    orderTotal: 32500,
-  ),
-  const TableData(id: '2', number: 2, status: TableStatus.available),
-  const TableData(
-    id: '3',
-    number: 3,
-    status: TableStatus.withOrder,
-    indicator: OrderIndicator.waiting,
-    guestCount: 2,
-    orderTotal: 18000,
-  ),
-  const TableData(id: '4', number: 4, status: TableStatus.available),
-  const TableData(id: '5', number: 5, status: TableStatus.reserved),
-  const TableData(
-    id: '6',
-    number: 6,
-    status: TableStatus.withOrder,
-    indicator: OrderIndicator.readyToServe,
-    guestCount: 6,
-    orderTotal: 54000,
-  ),
-  const TableData(id: '7', number: 7, status: TableStatus.available),
-  const TableData(id: '8', number: 8, status: TableStatus.available),
-  const TableData(
-    id: '9',
-    number: 9,
-    status: TableStatus.withOrder,
-    indicator: OrderIndicator.active,
-    guestCount: 3,
-    orderTotal: 27000,
-  ),
-  const TableData(id: '10', number: 10, status: TableStatus.available),
-  const TableData(id: '11', number: 11, status: TableStatus.reserved),
-  const TableData(id: '12', number: 12, status: TableStatus.available),
-  const TableData(
-    id: '13',
-    number: 13,
-    status: TableStatus.withOrder,
-    indicator: OrderIndicator.waiting,
-    guestCount: 2,
-    orderTotal: 15000,
-  ),
-  const TableData(id: '14', number: 14, status: TableStatus.available),
-  const TableData(
-    id: '15',
-    number: 15,
-    status: TableStatus.withOrder,
-    indicator: OrderIndicator.readyToServe,
-    guestCount: 5,
-    orderTotal: 42000,
-  ),
-  const TableData(id: '16', number: 16, status: TableStatus.available),
-  const TableData(id: '17', number: 17, status: TableStatus.available),
-  const TableData(id: '18', number: 18, status: TableStatus.reserved),
-  const TableData(id: '19', number: 19, status: TableStatus.available),
-  const TableData(
-    id: '20',
-    number: 20,
-    status: TableStatus.withOrder,
-    indicator: OrderIndicator.active,
-    guestCount: 4,
-    orderTotal: 38000,
-  ),
-];
+    indicator: indicator,
+    orderTotal: view.totalCents,
+  );
+}
 
 /// Pantalla principal del garzón: grid de mesas del local.
 ///
@@ -134,6 +101,7 @@ class TableGridScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
+    final tablesAsync = ref.watch(tablesViewProvider);
     final size = MediaQuery.sizeOf(context);
     final crossAxisCount =
         size.width > 900
@@ -187,86 +155,99 @@ class TableGridScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // ─── Stats bar ─────────────────────────────────
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _StatBadge(
-                  count:
-                      mockTables
-                          .where((t) => t.status == TableStatus.available)
-                          .length,
-                  label: 'Libres',
-                  color: AppTheme.tableAvailable,
-                ),
-                _StatBadge(
-                  count:
-                      mockTables
-                          .where((t) => t.status == TableStatus.withOrder)
-                          .length,
-                  label: 'Con Orden',
-                  color: AppTheme.tableWithOrder,
-                ),
-                _StatBadge(
-                  count:
-                      mockTables
-                          .where((t) => t.status == TableStatus.reserved)
-                          .length,
-                  label: 'Reservadas',
-                  color: AppTheme.tableReserved,
-                ),
-              ],
-            ),
-          ),
-
-          // ─── Grid de mesas ─────────────────────────────
-          Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1,
+      body: tablesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error:
+            (err, _) => Center(
+              child: Text(
+                'Error al cargar las mesas',
+                style: TextStyle(color: AppTheme.error),
               ),
-              itemCount: mockTables.length,
-              itemBuilder: (context, index) {
-                return _TableCard(table: mockTables[index]);
-              },
             ),
-          ),
+        data: (views) {
+          final tables = views.map(_toTableData).toList();
+          final freeCount =
+              tables.where((t) => t.status == TableStatus.available).length;
+          final withOrderCount =
+              tables.where((t) => t.status == TableStatus.withOrder).length;
 
-          // ─── Leyenda ───────────────────────────────────
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _LegendDot(color: AppTheme.dotWithOrder, label: 'Con Pedido'),
-                const SizedBox(width: 16),
-                _LegendDot(color: AppTheme.dotWaitingOrder, label: 'Esperando'),
-                const SizedBox(width: 16),
-                _LegendDot(color: AppTheme.dotReadyToServe, label: 'Listo'),
-              ],
-            ),
-          ),
-        ],
+          return Column(
+            children: [
+              // ─── Stats bar ─────────────────────────────────
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _StatBadge(
+                      count: freeCount,
+                      label: 'Libres',
+                      color: AppTheme.tableAvailable,
+                    ),
+                    _StatBadge(
+                      count: withOrderCount,
+                      label: 'Con Orden',
+                      color: AppTheme.tableWithOrder,
+                    ),
+                  ],
+                ),
+              ),
+
+              // ─── Grid de mesas ─────────────────────────────
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1,
+                  ),
+                  itemCount: tables.length,
+                  itemBuilder: (context, index) {
+                    return _TableCard(table: tables[index]);
+                  },
+                ),
+              ),
+
+              // ─── Leyenda ───────────────────────────────────
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _LegendDot(
+                      color: AppTheme.dotWithOrder,
+                      label: 'Con Pedido',
+                    ),
+                    const SizedBox(width: 16),
+                    _LegendDot(
+                      color: AppTheme.dotWaitingOrder,
+                      label: 'Esperando',
+                    ),
+                    const SizedBox(width: 16),
+                    _LegendDot(color: AppTheme.dotReadyToServe, label: 'Listo'),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -331,8 +312,6 @@ class _TableCard extends StatelessWidget {
         return AppTheme.tableAvailable;
       case TableStatus.withOrder:
         return AppTheme.tableWithOrder;
-      case TableStatus.reserved:
-        return AppTheme.tableReserved;
     }
   }
 
@@ -355,8 +334,6 @@ class _TableCard extends StatelessWidget {
         return 'Libre';
       case TableStatus.withOrder:
         return 'Con orden';
-      case TableStatus.reserved:
-        return 'Reservada';
     }
   }
 
@@ -422,26 +399,16 @@ class _TableCard extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (table.guestCount > 0) ...[
+                    // Total del pedido formateado a CLP (solo borde de UI)
+                    if (table.orderTotal > 0) ...[
                       const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.people_outline,
-                            color: Colors.white.withValues(alpha: 0.8),
-                            size: 14,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            '${table.guestCount}',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        formatClp(table.orderTotal),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ],

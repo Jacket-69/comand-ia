@@ -62,6 +62,16 @@ Mientras la sync remota (COMA-008) no esté implementada, el menú local se pueb
 - **Activación:** `lib/app/app.dart` llama `ref.watch(devSeedProvider)` al arrancar. La pantalla de pedido (`OrderScreen`) también espera al seed antes de mostrar el menú.
 - **Eliminación:** al mergearse COMA-008 (sync remota), el seed se reemplaza por la sincronización real desde Supabase. El provider `devSeedProvider` se elimina o se convierte en un paso de inicialización condicional.
 
+## KDS local (pre-COMA-008)
+
+El KDS de cocina opera contra Drift, sin depender de la red. En un solo dispositivo, el loop **toma → cocina → listo → pago** funciona completo offline:
+
+- **Lectura reactiva:** la pantalla de cocina observa `watchActiveOrders` (pedidos en `sent`/`preparing`/`ready`) y los ítems de cada pedido con `watchItems`. El grid de mesas observa `watchNonClosedOrders` para reflejar en vivo el estado de cada mesa (libre / con pedido / listo).
+- **Avance de ítem:** marcar un ítem (`sent → preparing → ready`) escribe el estado local y **re-deriva el estado del pedido**: todos los ítems no cancelados en `ready` → pedido `ready`; alguno en `preparing`/`ready` → pedido `preparing`; todos en `sent` → pedido `sent`. La derivación nunca degrada un pedido `closed` ni `cancelled` (ACID-4).
+- **Encolado:** cada avance encola `update_order_item` en `pending_op`, listo para drenar cuando exista la sync remota.
+
+Lo que **no** está hoy y entra con COMA-008: drenar la cola FIFO hacia Supabase y la suscripción Realtime para que una tablet de cocina *aparte* vea los pedidos en vivo. Las ops se encolan correctamente, pero no se envían todavía.
+
 ## Backoff y notificación
 
 - Backoff exponencial: `2^attempts` segundos, con cap en 5 min.
