@@ -34,15 +34,11 @@ class AppDatabase extends _$AppDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
+      // v1 → v2: agrega 'description' a menu_items. Aditivo y no destructivo:
+      // NO se tocan customer_orders, order_items ni pending_ops, para no perder
+      // pedidos abiertos ni la cola FIFO de sincronización offline (ACID-7).
       if (from < 2) {
-        // Borramos las tablas viejas para que se vuelvan a crear con la columna 'description'
-        await m.deleteTable('menu_categories');
-        await m.deleteTable('menu_items');
-        await m.deleteTable('dining_tables');
-        await m.deleteTable('customer_orders');
-        await m.deleteTable('order_items');
-        await m.deleteTable('pending_ops');
-        await m.createAll();
+        await m.addColumn(menuItems, menuItems.description);
       }
     },
   );
