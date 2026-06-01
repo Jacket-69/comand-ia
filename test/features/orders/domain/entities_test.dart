@@ -231,6 +231,7 @@ void main() {
         null, // closedAt
         0, // totalCents
         null, // paymentMethod
+        0, // tipCents (default)
         null, // notes
         null, // updatedAt
       ]);

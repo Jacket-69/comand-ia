@@ -12,7 +12,7 @@
 | `menu_category` | `id`, `venue_id`, `name`, `sort_order`, `active`, `updated_at` | |
 | `menu_item` | `id`, `venue_id`, `category_id`, `name`, `price_cents` (int), `active`, `image_url`, `updated_at` | Precio en centavos (no float). |
 | `dining_table` | `id`, `venue_id`, `label`, `capacity`, `active`, `updated_at` | Renombrado desde `table` para evitar colisión SQL. |
-| `customer_order` | `id`, `venue_id`, `dining_table_id`, `status` (`open` \| `sent` \| `preparing` \| `ready` \| `closed` \| `cancelled`), `opened_by`, `opened_at`, `closed_at`, `total_cents`, `payment_method`, `notes`, `updated_at` | `total_cents` calculado por trigger; el cliente nunca lo escribe. ACID-3. |
+| `customer_order` | `id`, `venue_id`, `dining_table_id`, `status` (`open` \| `sent` \| `preparing` \| `ready` \| `closed` \| `cancelled`), `opened_by`, `opened_at`, `closed_at`, `total_cents`, `tip_cents`, `payment_method`, `notes`, `updated_at` | `total_cents` calculado por trigger; el cliente nunca lo escribe. `tip_cents` (int, default 0) es la propina del comensal: separada de `total_cents`, se fija al cerrar la cuenta. ACID-3. |
 | `order_item` | `id`, `venue_id`, `order_id`, `menu_item_id`, `name_snapshot`, `price_cents_snapshot`, `quantity`, `comments`, `status`, `updated_at` | Snapshots inmutables al INSERT. ACID-2. |
 | `pending_op` | `id`, `venue_id`, `op_type`, `payload` (jsonb), `created_at`, `attempts` | **Local-only (Drift). Cola FIFO de sincronización. No existe en Supabase.** ACID-7. |
 | `audit_log` | `id`, `venue_id`, `app_user_id`, `action`, `entity`, `entity_id`, `diff` (jsonb), `at` | Trazabilidad mínima de mutaciones importantes. |

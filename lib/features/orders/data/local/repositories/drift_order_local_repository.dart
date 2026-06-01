@@ -264,6 +264,44 @@ class DriftOrderLocalRepository implements OrderLocalRepository {
     return customerOrderFromRow(row);
   }
 
+  @override
+  Future<CustomerOrder> closeOrder({
+    required String orderId,
+    required PaymentMethod paymentMethod,
+    int tipCents = 0,
+  }) async {
+    // 1. Carga el pedido; falla si no existe.
+    final current = await orderById(orderId);
+    if (current == null) {
+      throw ArgumentError('Pedido no encontrado: $orderId');
+    }
+
+    // 2. ACID-4: un pedido cerrado es terminal; no se puede re-cerrar.
+    if (current.status == OrderStatus.closed) {
+      throw StateError(
+        'El pedido $orderId ya está cerrado (ACID-4); no se puede re-cerrar.',
+      );
+    }
+
+    // 3. Escribe status=closed, closedAt, paymentMethod y tipCents.
+    //    NO se toca totalCents: lo gestiona _recalculateTotal (ACID-3).
+    await (_db.update(_db.customerOrders)
+      ..where((t) => t.id.equals(orderId))).write(
+      CustomerOrdersCompanion(
+        status: Value(OrderStatus.closed.toDb()),
+        closedAt: Value(DateTime.now()),
+        paymentMethod: Value(paymentMethod.toDb()),
+        tipCents: Value(tipCents),
+      ),
+    );
+
+    // 4. Retorna el pedido actualizado desde la BD.
+    final row =
+        await (_db.select(_db.customerOrders)
+          ..where((t) => t.id.equals(orderId))).getSingle();
+    return customerOrderFromRow(row);
+  }
+
   /// Recalcula [CustomerOrderRow.totalCents] = SUM(priceCentsSnapshot × quantity)
   /// de ítems con status != cancelled. Espejo del trigger Postgres.
   Future<void> _recalculateTotal(String orderId) async {

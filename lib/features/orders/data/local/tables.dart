@@ -138,6 +138,12 @@ class CustomerOrders extends Table {
   /// Notas libres opcionales.
   TextColumn get notes => text().nullable()();
 
+  /// Propina en centavos (CLP × 100). Separada de [totalCents] — ACID-3:
+  /// el total del pedido nunca incluye la propina; son campos independientes.
+  /// Default 0 para que el ALTER ADD COLUMN de la migración v2→v3 sea válido
+  /// sobre filas preexistentes (SQLite exige default en columnas NOT NULL nuevas).
+  IntColumn get tipCents => integer().withDefault(const Constant(0))();
+
   /// Timestamp del servidor (LWW). Nullable hasta que haya sync.
   DateTimeColumn get updatedAt => dateTime().nullable()();
 

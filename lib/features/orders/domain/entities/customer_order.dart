@@ -75,6 +75,8 @@ enum PaymentMethod {
 ///
 /// ACID-3: [totalCents] lo recalcula el repositorio desde los ítems.
 /// La UI nunca escribe [totalCents] directamente.
+/// [tipCents] es la propina del comensal; es independiente de [totalCents] y
+/// jamás entra en el cálculo del total (ACID-3).
 class CustomerOrder extends Equatable {
   const CustomerOrder({
     required this.id,
@@ -86,6 +88,7 @@ class CustomerOrder extends Equatable {
     this.openedBy,
     this.closedAt,
     this.paymentMethod,
+    this.tipCents = 0,
     this.notes,
     this.updatedAt,
   });
@@ -118,6 +121,10 @@ class CustomerOrder extends Equatable {
   /// Método de pago (solo cuando status == closed).
   final PaymentMethod? paymentMethod;
 
+  /// Propina en centavos (CLP × 100). Separada de [totalCents] — ACID-3:
+  /// el total del pedido nunca incluye la propina. La decide el comensal al cierre.
+  final int tipCents;
+
   /// Notas libres opcionales del pedido.
   final String? notes;
 
@@ -135,6 +142,7 @@ class CustomerOrder extends Equatable {
     closedAt,
     totalCents,
     paymentMethod,
+    tipCents,
     notes,
     updatedAt,
   ];

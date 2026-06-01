@@ -75,4 +75,18 @@ abstract class OrderLocalRepository {
   /// pantalla de toma de pedido (COMA-007). El estado `closed` es terminal
   /// y no se puede modificar (ACID-4) — hacer cumplir a nivel de repo.
   Future<CustomerOrder> updateStatus(String orderId, OrderStatus status);
+
+  /// Cierra el pedido (status closed, terminal — ACID-4).
+  ///
+  /// Fija [CustomerOrder.closedAt], [CustomerOrder.paymentMethod] y
+  /// [CustomerOrder.tipCents]. NO modifica [CustomerOrder.totalCents]: el total
+  /// es solo la suma de ítems y la propina se registra aparte (ACID-3).
+  ///
+  /// Lanza [ArgumentError] si el pedido no existe.
+  /// Lanza [StateError] si el pedido ya está cerrado (ACID-4, no re-cerrar).
+  Future<CustomerOrder> closeOrder({
+    required String orderId,
+    required PaymentMethod paymentMethod,
+    int tipCents = 0,
+  });
 }
