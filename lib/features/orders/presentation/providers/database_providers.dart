@@ -1,7 +1,9 @@
 import 'package:comand_ia/features/orders/data/local/app_database.dart';
+import 'package:comand_ia/features/orders/data/local/repositories/drift_dining_table_local_repository.dart';
 import 'package:comand_ia/features/orders/data/local/repositories/drift_menu_local_repository.dart';
 import 'package:comand_ia/features/orders/data/local/repositories/drift_order_local_repository.dart';
 import 'package:comand_ia/features/orders/data/local/repositories/drift_pending_op_queue.dart';
+import 'package:comand_ia/features/orders/domain/repositories/dining_table_local_repository.dart';
 import 'package:comand_ia/features/orders/domain/repositories/menu_local_repository.dart';
 import 'package:comand_ia/features/orders/domain/repositories/order_local_repository.dart';
 import 'package:comand_ia/features/orders/domain/repositories/pending_op_queue.dart';
@@ -32,3 +34,10 @@ final orderLocalRepositoryProvider = Provider<OrderLocalRepository>((ref) {
 final pendingOpQueueProvider = Provider<PendingOpQueue>((ref) {
   return DriftPendingOpQueue(ref.watch(appDatabaseProvider));
 });
+
+/// Repositorio local de mesas.
+final diningTableLocalRepositoryProvider = Provider<DiningTableLocalRepository>(
+  (ref) {
+    return DriftDiningTableLocalRepository(ref.watch(appDatabaseProvider));
+  },
+);

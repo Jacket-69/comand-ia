@@ -117,6 +117,131 @@ class DriftOrderLocalRepository implements OrderLocalRepository {
   }
 
   @override
+  Stream<List<CustomerOrder>> watchActiveOrders(String venueId) {
+    // Pedidos en cocina: sent, preparing, ready. Excluye open, closed, cancelled.
+    final activeStatuses = [
+      OrderStatus.sent.toDb(),
+      OrderStatus.preparing.toDb(),
+      OrderStatus.ready.toDb(),
+    ];
+    return (_db.select(_db.customerOrders)
+          ..where(
+            (t) => t.venueId.equals(venueId) & t.status.isIn(activeStatuses),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.openedAt)]))
+        .watch()
+        .map((rows) => rows.map(customerOrderFromRow).toList());
+  }
+
+  @override
+  Stream<List<CustomerOrder>> watchNonClosedOrders(String venueId) {
+    // Pedidos vivos para el grid de mesas: excluye closed y cancelled.
+    final excludedStatuses = [
+      OrderStatus.closed.toDb(),
+      OrderStatus.cancelled.toDb(),
+    ];
+    return (_db.select(_db.customerOrders)
+          ..where(
+            (t) =>
+                t.venueId.equals(venueId) & t.status.isNotIn(excludedStatuses),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.openedAt)]))
+        .watch()
+        .map((rows) => rows.map(customerOrderFromRow).toList());
+  }
+
+  @override
+  Stream<List<OrderItem>> watchItems(String orderId) {
+    return (_db.select(_db.orderItems)
+          ..where((t) => t.orderId.equals(orderId))
+          ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+        .watch()
+        .map((rows) => rows.map(orderItemFromRow).toList());
+  }
+
+  @override
+  Future<OrderItem> updateItemStatus(
+    String itemId,
+    OrderItemStatus status,
+  ) async {
+    // 1. Carga el ítem; falla si no existe.
+    final itemRows =
+        await (_db.select(_db.orderItems)
+          ..where((t) => t.id.equals(itemId))).get();
+    if (itemRows.isEmpty) {
+      throw ArgumentError('Ítem no encontrado: $itemId');
+    }
+    final itemRow = itemRows.first;
+
+    // 2. Verifica que el pedido padre no esté cerrado (ACID-4).
+    final orderRows =
+        await (_db.select(_db.customerOrders)
+          ..where((t) => t.id.equals(itemRow.orderId))).get();
+    if (orderRows.isEmpty) {
+      throw ArgumentError('Pedido no encontrado: ${itemRow.orderId}');
+    }
+    final orderRow = orderRows.first;
+    final orderStatus = OrderStatus.fromDb(orderRow.status);
+    if (orderStatus == OrderStatus.closed) {
+      throw StateError(
+        'El pedido ${itemRow.orderId} está cerrado (ACID-4); no se puede modificar el ítem.',
+      );
+    }
+
+    // 3. Escribe el nuevo status del ítem.
+    await (_db.update(_db.orderItems)..where(
+      (t) => t.id.equals(itemId),
+    )).write(OrderItemsCompanion(status: Value(status.toDb())));
+
+    // 4. Re-deriva el status del pedido padre si no está cerrado ni cancelado.
+    if (orderStatus != OrderStatus.cancelled) {
+      await _deriveOrderStatus(itemRow.orderId);
+    }
+
+    // Retorna el ítem actualizado.
+    final updatedRow =
+        await (_db.select(_db.orderItems)
+          ..where((t) => t.id.equals(itemId))).getSingle();
+    return orderItemFromRow(updatedRow);
+  }
+
+  /// Deriva y persiste el status del pedido a partir de sus ítems no-cancelados.
+  ///
+  /// Regla:
+  /// - sin ítems no-cancelados → no cambia el status.
+  /// - todos ready → pedido ready.
+  /// - alguno en preparing o ready (pero no todos ready) → pedido preparing.
+  /// - todos en sent → pedido sent.
+  Future<void> _deriveOrderStatus(String orderId) async {
+    final items =
+        await (_db.select(_db.orderItems)..where(
+          (t) =>
+              t.orderId.equals(orderId) &
+              t.status.isNotValue(OrderItemStatus.cancelled.toDb()),
+        )).get();
+
+    if (items.isEmpty) return;
+
+    final statuses = items.map((r) => OrderItemStatus.fromDb(r.status)).toSet();
+
+    final OrderStatus derivedStatus;
+    if (statuses.every((s) => s == OrderItemStatus.ready)) {
+      derivedStatus = OrderStatus.ready;
+    } else if (statuses.any(
+      (s) => s == OrderItemStatus.preparing || s == OrderItemStatus.ready,
+    )) {
+      derivedStatus = OrderStatus.preparing;
+    } else {
+      // Todos en sent
+      derivedStatus = OrderStatus.sent;
+    }
+
+    await (_db.update(_db.customerOrders)..where(
+      (t) => t.id.equals(orderId),
+    )).write(CustomerOrdersCompanion(status: Value(derivedStatus.toDb())));
+  }
+
+  @override
   Future<CustomerOrder> updateStatus(String orderId, OrderStatus status) async {
     // ACID-4: el estado `closed` es terminal; no se puede modificar.
     final current = await orderById(orderId);

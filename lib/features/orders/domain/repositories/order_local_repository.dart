@@ -40,6 +40,35 @@ abstract class OrderLocalRepository {
   /// Stream reactivo de pedidos abiertos de un venue, ordenados por apertura.
   Stream<List<CustomerOrder>> watchOpenOrders(String venueId);
 
+  /// Stream reactivo de pedidos activos (sent, preparing, ready) de un venue.
+  ///
+  /// Alimenta el KDS de cocina. Excluye open, closed y cancelled.
+  /// Ordenados por openedAt asc para servir en el mismo orden de llegada.
+  Stream<List<CustomerOrder>> watchActiveOrders(String venueId);
+
+  /// Stream reactivo de pedidos no cerrados (open, sent, preparing, ready).
+  ///
+  /// Alimenta el grid de mesas. Excluye closed y cancelled.
+  /// Ordenados por openedAt asc.
+  Stream<List<CustomerOrder>> watchNonClosedOrders(String venueId);
+
+  /// Stream reactivo de ítems de un pedido, ordenados por id asc.
+  ///
+  /// Reactivo: emite cada vez que cambia un ítem del pedido.
+  Stream<List<OrderItem>> watchItems(String orderId);
+
+  /// Actualiza el estado de un ítem y re-deriva el estado del pedido padre.
+  ///
+  /// Regla de derivación (ignora ítems cancelled):
+  /// - sin ítems no-cancelados → no cambia el status del pedido.
+  /// - todos los no-cancelados en ready → pedido ready.
+  /// - alguno en preparing o ready (pero no todos ready) → pedido preparing.
+  /// - todos en sent → pedido sent.
+  ///
+  /// Lanza [ArgumentError] si el ítem no existe.
+  /// Lanza [StateError] si el pedido padre está cerrado (ACID-4).
+  Future<OrderItem> updateItemStatus(String itemId, OrderItemStatus status);
+
   /// Actualiza el estado de un pedido y retorna el pedido actualizado.
   ///
   /// Usar para la transición `open → sent` al confirmar el pedido desde la
