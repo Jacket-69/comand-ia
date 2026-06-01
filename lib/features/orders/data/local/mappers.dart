@@ -59,7 +59,7 @@ MenuItemsCompanion menuItemToCompanion(MenuItem entity) =>
       venueId: entity.venueId,
       categoryId: entity.categoryId,
       name: entity.name,
-      description: entity.description,
+      description: Value(entity.description),
       priceCents: entity.priceCents,
       active: Value(entity.active),
       imageUrl: Value(entity.imageUrl),

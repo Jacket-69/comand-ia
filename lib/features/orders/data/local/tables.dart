@@ -45,7 +45,11 @@ class MenuItems extends Table {
   TextColumn get name => text()();
 
   /// Descripción del ítem.
-  TextColumn get description => text()();
+  ///
+  /// Default vacío para que el `ALTER TABLE ADD COLUMN` de la migración v1→v2
+  /// sea válido sobre filas preexistentes (SQLite exige default en columnas
+  /// NOT NULL agregadas). Los INSERT desde la entidad siempre proveen su valor.
+  TextColumn get description => text().withDefault(const Constant(''))();
 
   /// Precio en centavos (CLP × 100). Nunca float.
   IntColumn get priceCents => integer()();

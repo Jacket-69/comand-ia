@@ -481,7 +481,8 @@ class $MenuItemsTable extends MenuItems
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
   );
   static const VerificationMeta _priceCentsMeta = const VerificationMeta(
     'priceCents',
@@ -603,8 +604,6 @@ class $MenuItemsTable extends MenuItems
           _descriptionMeta,
         ),
       );
-    } else if (isInserting) {
-      context.missing(_descriptionMeta);
     }
     if (data.containsKey('price_cents')) {
       context.handle(
@@ -718,6 +717,10 @@ class MenuItemRow extends DataClass implements Insertable<MenuItemRow> {
   final String name;
 
   /// Descripción del ítem.
+  ///
+  /// Default vacío para que el `ALTER TABLE ADD COLUMN` de la migración v1→v2
+  /// sea válido sobre filas preexistentes (SQLite exige default en columnas
+  /// NOT NULL agregadas). Los INSERT desde la entidad siempre proveen su valor.
   final String description;
 
   /// Precio en centavos (CLP × 100). Nunca float.
@@ -939,7 +942,7 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItemRow> {
     required String venueId,
     required String categoryId,
     required String name,
-    required String description,
+    this.description = const Value.absent(),
     required int priceCents,
     this.active = const Value.absent(),
     this.imageUrl = const Value.absent(),
@@ -950,7 +953,6 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItemRow> {
        venueId = Value(venueId),
        categoryId = Value(categoryId),
        name = Value(name),
-       description = Value(description),
        priceCents = Value(priceCents);
   static Insertable<MenuItemRow> custom({
     Expression<String>? id,
@@ -3560,7 +3562,7 @@ typedef $$MenuItemsTableCreateCompanionBuilder =
       required String venueId,
       required String categoryId,
       required String name,
-      required String description,
+      Value<String> description,
       required int priceCents,
       Value<bool> active,
       Value<String?> imageUrl,
@@ -3810,7 +3812,7 @@ class $$MenuItemsTableTableManager
                 required String venueId,
                 required String categoryId,
                 required String name,
-                required String description,
+                Value<String> description = const Value.absent(),
                 required int priceCents,
                 Value<bool> active = const Value.absent(),
                 Value<String?> imageUrl = const Value.absent(),
