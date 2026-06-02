@@ -23,8 +23,8 @@ COMAND-IA reemplaza la libreta del garzón y el cuaderno del dueño con una sola
 
 | | |
 |---|---|
-| **Fase** | Sprint 1 — fundación técnica cerrada · próximo: toma de pedido offline |
-| **Hito siguiente** | Avance 2 (2026-05-26) — Capa 1 demoable |
+| **Fase** | Capa 1 — loop operativo offline-first implementado (toma → cocina → cobro) |
+| **Hito siguiente** | Defensa final (2026-07-07) — MVP Capa 1 + Capa 2 |
 | **Defensa final** | 2026-07-07 — MVP Capa 1 + Capa 2 |
 | **Equipo** | Benjamín López (PO + Backend) · Fernando Godoy (Frontend + UX) |
 | **Perfil** | Estándar (M) × BaaS-only — metodología in-house |
@@ -88,9 +88,9 @@ comand-ia/
 │   ├── app/                # bootstrap, router, theme
 │   ├── core/               # cross-cutting: env, errors, logging
 │   └── features/           # vertical slices (data + domain + presentation)
-│       ├── auth/           # implementado: login mock + contrato
-│       └── orders/         # implementado: grid inicial de mesas
-│       # Próximo: menu/, kitchen/, analytics/
+│       ├── auth/           # login (magic link dueño + PIN garzón, mock)
+│       └── orders/         # toma de pedido, KDS cocina y cierre de cuenta (offline-first)
+│       # Próximo: analytics/ (Capa 2 — dashboard del dueño)
 ├── test/                   # unit + widget actuales
 ├── tool/                   # utilidades de CI local
 ├── supabase/
@@ -113,8 +113,8 @@ comand-ia/
 ```
 
 > La estructura documenta el estado actual del repo y el crecimiento esperado.
-> `menu/`, `kitchen/`, `analytics/` e `integration_test/` se agregan cuando
-> entren sus historias al sprint, no como carpetas vacías.
+> Cocina (KDS) y menú viven dentro de `orders/`; `analytics/` (Capa 2) e
+> `integration_test/` se agregan cuando entren sus historias al sprint.
 
 ## Documentación
 
@@ -138,6 +138,7 @@ La doc vive como código en `docs/`, organizada según el árbol canónico de la
 | [C4 Context](docs/architecture/c4-context.md) | Sistema y actores externos. |
 | [C4 Container](docs/architecture/c4-container.md) | Contenedores y stacks. |
 | [Invariants](docs/architecture/invariants.md) | ACID-1..7 + aplicación de SOLID. |
+| [Layout tree](docs/architecture/layout-tree.md) | Árbol de navegación + widgets por pantalla + capa de estado/datos. |
 | [ADRs](docs/architecture/decisions/) | Decisiones costosas de revertir, formato MADR. |
 
 ### Datos y backend (BaaS-only)
