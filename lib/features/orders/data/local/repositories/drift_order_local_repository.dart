@@ -205,6 +205,36 @@ class DriftOrderLocalRepository implements OrderLocalRepository {
     return orderItemFromRow(updatedRow);
   }
 
+  @override
+  Future<CustomerOrder?> activeOrderForTable(
+    String venueId,
+    String diningTableId,
+  ) async {
+    // Excluye pedidos cerrados y cancelados; toma el más reciente por openedAt.
+    final excludedStatuses = [
+      OrderStatus.closed.toDb(),
+      OrderStatus.cancelled.toDb(),
+    ];
+    final rows =
+        await (_db.select(_db.customerOrders)
+              ..where(
+                (t) =>
+                    t.venueId.equals(venueId) &
+                    t.diningTableId.equals(diningTableId) &
+                    t.status.isNotIn(excludedStatuses),
+              )
+              ..orderBy([(t) => OrderingTerm.desc(t.openedAt)])
+              ..limit(1))
+            .get();
+
+    if (rows.isEmpty) return null;
+    return customerOrderFromRow(rows.first);
+  }
+
+  @override
+  Future<void> recomputeOrderStatus(String orderId) =>
+      _deriveOrderStatus(orderId);
+
   /// Deriva y persiste el status del pedido a partir de sus ítems no-cancelados.
   ///
   /// Regla:

@@ -478,7 +478,14 @@ class _MenuItemCard extends StatelessWidget {
   }
 }
 
-/// Panel inferior con resumen del pedido y botón "Enviar a Cocina".
+/// Panel inferior con resumen del pedido y botones de acción.
+///
+/// En append mode muestra:
+///   - Banner con el total y cuenta del pedido activo.
+///   - Botón primario "Agregar a cocina" (solo si hay líneas en el borrador).
+///   - Botón secundario "Pedir la cuenta" (siempre disponible en append mode).
+///
+/// En modo nuevo muestra el flujo clásico con "Enviar a Cocina".
 class _OrderPanel extends ConsumerWidget {
   const _OrderPanel({required this.tableId, required this.state});
 
@@ -505,6 +512,36 @@ class _OrderPanel extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Banner del pedido activo (solo append mode)
+          if (state.isAppendMode) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Pedido actual · ${state.existingItemCount} ítems',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    formatClp(state.existingOrderTotalCents),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+
           // Líneas del borrador
           if (state.hasLines)
             ...state.lines.map(
@@ -530,19 +567,18 @@ class _OrderPanel extends ConsumerWidget {
               ),
             ),
 
-          const Divider(),
+          if (state.hasLines) ...[
+            const Divider(),
 
-          // Conteo de ítems
-          if (state.hasLines)
+            // Conteo de ítems del borrador
             Text(
-              '${state.lines.fold(0, (acc, l) => acc + l.quantity)} ítems',
+              '${state.lines.fold(0, (acc, l) => acc + l.quantity)} ítems nuevos',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
             ),
 
-          // Propina sugerida (solo informativa — NO se persiste)
-          if (state.hasLines) ...[
+            // Propina sugerida (solo informativa — NO se persiste)
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -574,22 +610,28 @@ class _OrderPanel extends ConsumerWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+          ] else if (!state.isAppendMode) ...[
+            const Divider(),
           ],
 
-          const SizedBox(height: 8),
-
-          // Botón "Enviar a Cocina" (min 52px por AppTheme ElevatedButton)
+          // Botón principal: "Agregar a cocina" o "Enviar a Cocina"
           ElevatedButton(
             onPressed:
                 state.isConfirming || !state.hasLines
                     ? null
                     : () async {
+                      final isAppend = state.isAppendMode;
                       try {
                         await ctrl.confirm();
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Pedido enviado a cocina'),
+                            SnackBar(
+                              content: Text(
+                                isAppend
+                                    ? 'Ítems agregados al pedido'
+                                    : 'Pedido enviado a cocina',
+                              ),
                               backgroundColor: AppTheme.primary,
                             ),
                           );
@@ -616,8 +658,21 @@ class _OrderPanel extends ConsumerWidget {
                         color: Colors.white,
                       ),
                     )
-                    : const Text('Enviar a Cocina'),
+                    : Text(
+                      state.isAppendMode
+                          ? 'Agregar a cocina'
+                          : 'Enviar a Cocina',
+                    ),
           ),
+
+          // Botón "Pedir la cuenta" (solo append mode — siempre disponible)
+          if (state.isAppendMode) ...[
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () => context.go('/checkout/${state.existingOrderId}'),
+              child: const Text('Pedir la cuenta'),
+            ),
+          ],
         ],
       ),
     );

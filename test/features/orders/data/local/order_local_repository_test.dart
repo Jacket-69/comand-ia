@@ -244,4 +244,94 @@ void main() {
       expect(ordersA.first.venueId, 'venue-A');
     });
   });
+
+  group('activeOrderForTable', () {
+    test('retorna el pedido activo de la mesa', () async {
+      final order = await repo.createOrder(
+        venueId: 'venue-A',
+        diningTableId: 'table-1',
+      );
+
+      final active = await repo.activeOrderForTable('venue-A', 'table-1');
+      expect(active, isNotNull);
+      expect(active!.id, order.id);
+      expect(active.status, OrderStatus.open);
+    });
+
+    test('retorna null si no hay pedido activo en la mesa', () async {
+      final active = await repo.activeOrderForTable('venue-A', 'table-1');
+      expect(active, isNull);
+    });
+
+    test('retorna null si el único pedido de la mesa está cerrado', () async {
+      final order = await repo.createOrder(
+        venueId: 'venue-A',
+        diningTableId: 'table-1',
+      );
+      await repo.updateStatus(order.id, OrderStatus.closed);
+
+      final active = await repo.activeOrderForTable('venue-A', 'table-1');
+      expect(active, isNull);
+    });
+
+    test('retorna null si el único pedido de la mesa está cancelado', () async {
+      final order = await repo.createOrder(
+        venueId: 'venue-A',
+        diningTableId: 'table-1',
+      );
+      await repo.updateStatus(order.id, OrderStatus.cancelled);
+
+      final active = await repo.activeOrderForTable('venue-A', 'table-1');
+      expect(active, isNull);
+    });
+
+    test('no incluye pedidos de otras mesas del mismo venue', () async {
+      await repo.createOrder(venueId: 'venue-A', diningTableId: 'table-2');
+
+      final active = await repo.activeOrderForTable('venue-A', 'table-1');
+      expect(active, isNull);
+    });
+  });
+
+  group('recomputeOrderStatus', () {
+    test('deriva sent cuando todos los ítems están en sent', () async {
+      final order = await repo.createOrder(
+        venueId: 'venue-A',
+        diningTableId: 'table-1',
+      );
+      await repo.addItem(orderId: order.id, menuItem: testMenuItem);
+      await repo.addItem(orderId: order.id, menuItem: testMenuItem2);
+      // Tras addItem los ítems quedan en sent; updateStatus para reflejar eso.
+      await repo.updateStatus(order.id, OrderStatus.sent);
+
+      // recomputeOrderStatus con todos sent → debe quedar sent.
+      await repo.recomputeOrderStatus(order.id);
+      final updated = await repo.orderById(order.id);
+      expect(updated!.status, OrderStatus.sent);
+    });
+
+    test(
+      'deriva ready cuando todos los ítems no-cancelados están en ready',
+      () async {
+        final order = await repo.createOrder(
+          venueId: 'venue-A',
+          diningTableId: 'table-1',
+        );
+        final item1 = await repo.addItem(
+          orderId: order.id,
+          menuItem: testMenuItem,
+        );
+        final item2 = await repo.addItem(
+          orderId: order.id,
+          menuItem: testMenuItem2,
+        );
+        await repo.updateItemStatus(item1.id, OrderItemStatus.ready);
+        await repo.updateItemStatus(item2.id, OrderItemStatus.ready);
+
+        await repo.recomputeOrderStatus(order.id);
+        final updated = await repo.orderById(order.id);
+        expect(updated!.status, OrderStatus.ready);
+      },
+    );
+  });
 }

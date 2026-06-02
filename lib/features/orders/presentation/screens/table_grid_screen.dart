@@ -56,12 +56,12 @@ class TableData {
 
 /// Convierte un [TableView] al modelo visual [TableData] usado por el grid.
 ///
-/// Mapeo de estados:
+/// Mapeo de estados del indicador de punto:
 /// - isFree → available, sin indicador.
-/// - ready  → withOrder, indicador readyToServe (punto amarillo).
-/// - open/sent/preparing → withOrder, indicador según estado:
-///     open → waiting (rojo, aún no enviado a cocina).
-///     sent/preparing → active (verde, en curso en cocina).
+/// - open   → withOrder, waiting (rojo — pedido abierto, no enviado a cocina).
+/// - sent   → withOrder, waiting (rojo — enviado, cocina aún no empezó).
+/// - preparing → withOrder, active (verde — en preparación).
+/// - ready  → withOrder, readyToServe (amarillo — listo para servir).
 TableData _toTableData(TableView view) {
   final table = view.table;
   // El número visible se extrae de sortOrder (1-based) o parseando label.
@@ -78,8 +78,9 @@ TableData _toTableData(TableView view) {
 
   final indicator = switch (view.orderStatus) {
     OrderStatus.ready => OrderIndicator.readyToServe,
-    OrderStatus.open => OrderIndicator.waiting,
-    OrderStatus.sent || OrderStatus.preparing => OrderIndicator.active,
+    OrderStatus.preparing => OrderIndicator.active,
+    // open y sent: esperando que la cocina empiece (rojo).
+    OrderStatus.open || OrderStatus.sent => OrderIndicator.waiting,
     // closed/cancelled no deberían llegar (el provider filtra no-cerrados),
     // pero si llegasen los mostramos como sin indicador.
     _ => OrderIndicator.none,
@@ -237,13 +238,13 @@ class TableGridScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _LegendDot(
-                      color: AppTheme.dotWithOrder,
-                      label: 'Con Pedido',
+                      color: AppTheme.dotWaitingOrder,
+                      label: 'Esperando',
                     ),
                     const SizedBox(width: 16),
                     _LegendDot(
-                      color: AppTheme.dotWaitingOrder,
-                      label: 'Esperando',
+                      color: AppTheme.dotWithOrder,
+                      label: 'Preparando',
                     ),
                     const SizedBox(width: 16),
                     _LegendDot(color: AppTheme.dotReadyToServe, label: 'Listo'),
@@ -348,12 +349,9 @@ class _TableCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          // Mesa con pedido activo → cobrar cuenta; mesa libre → nueva toma.
-          if (table.status == TableStatus.withOrder && table.orderId != null) {
-            context.go('/checkout/${table.orderId}');
-          } else {
-            context.go('/order/${table.id}');
-          }
+          // Siempre va a la pantalla de pedido; el cobro se alcanza desde
+          // "Pedir la cuenta" en la pantalla de pedido (FIX #1d).
+          context.go('/order/${table.id}');
         },
         borderRadius: BorderRadius.circular(AppTheme.borderRadius),
         child: AnimatedContainer(
