@@ -343,15 +343,73 @@ class _TableCard extends StatelessWidget {
     }
   }
 
+  /// Hoja de acciones para una mesa con pedido activo: seguir pidiendo
+  /// (agrega ítems al pedido abierto) o pedir la cuenta (cobro).
+  void _showTableActions(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  children: [
+                    Text(
+                      'Mesa ${table.number}',
+                      style: Theme.of(sheetContext).textTheme.titleLarge,
+                    ),
+                    const Spacer(),
+                    if (table.orderTotal > 0)
+                      Text(
+                        formatClp(table.orderTotal),
+                        style: Theme.of(sheetContext).textTheme.titleMedium
+                            ?.copyWith(color: AppTheme.textSecondary),
+                      ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.add_circle_outline),
+                title: const Text('Seguir pidiendo'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  context.go('/order/${table.id}');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.receipt_long_outlined),
+                title: const Text('Pedir la cuenta'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  context.go('/checkout/${table.orderId}');
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          // Siempre va a la pantalla de pedido; el cobro se alcanza desde
-          // "Pedir la cuenta" en la pantalla de pedido (FIX #1d).
-          context.go('/order/${table.id}');
+          // Mesa libre → toma de pedido directa.
+          // Mesa con pedido → hoja de acciones (seguir pidiendo / pedir la cuenta),
+          // para no obligar a entrar al menú solo para cobrar.
+          if (table.status == TableStatus.withOrder && table.orderId != null) {
+            _showTableActions(context);
+          } else {
+            context.go('/order/${table.id}');
+          }
         },
         borderRadius: BorderRadius.circular(AppTheme.borderRadius),
         child: AnimatedContainer(

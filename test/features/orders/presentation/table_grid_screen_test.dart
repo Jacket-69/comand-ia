@@ -208,5 +208,19 @@ void main() {
       // Mesa con preparing → "Con orden" visible
       expect(find.text('Con orden'), findsOneWidget);
     });
+
+    testWidgets('tap en mesa ocupada abre hoja con "Seguir pidiendo" y '
+        '"Pedir la cuenta"', (tester) async {
+      await tester.pumpWidget(buildTestWidget([_tableViewSent]));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Tocar la tarjeta de la mesa ocupada abre la hoja de acciones.
+      await tester.tap(find.text('Con orden'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Seguir pidiendo'), findsOneWidget);
+      expect(find.text('Pedir la cuenta'), findsOneWidget);
+    });
   });
 }
