@@ -31,7 +31,7 @@ final _tableViewFree = TableView(
   ),
 );
 
-/// Mesa con pedido enviado a cocina (sent → indicador active).
+/// Mesa con pedido enviado a cocina (sent → indicador waiting).
 final _tableViewSent = TableView(
   table: const DiningTable(
     id: '2',
@@ -162,6 +162,51 @@ void main() {
 
       // Sin mesas, los contadores deben ser 0
       expect(find.text('0'), findsWidgets);
+    });
+
+    testWidgets('leyenda muestra Esperando, Preparando y Listo', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget([_tableViewFree, _tableViewSent, _tableViewReady]),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Esperando'), findsOneWidget);
+      expect(find.text('Preparando'), findsOneWidget);
+      expect(find.text('Listo'), findsOneWidget);
+    });
+
+    testWidgets('mesa con sent muestra etiqueta "Con orden" (no checkout)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildTestWidget([_tableViewSent]));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // La mesa con sent sigue mostrando "Con orden" en el card
+      expect(find.text('Con orden'), findsOneWidget);
+    });
+
+    testWidgets('_toTableData mapea preparing → active', (tester) async {
+      final tableViewPreparing = TableView(
+        table: const DiningTable(
+          id: '4',
+          venueId: kVenueId,
+          label: 'Mesa 4',
+          sortOrder: 4,
+        ),
+        orderStatus: OrderStatus.preparing,
+        orderId: 'order-4',
+        totalCents: 100000,
+      );
+      await tester.pumpWidget(buildTestWidget([tableViewPreparing]));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Mesa con preparing → "Con orden" visible
+      expect(find.text('Con orden'), findsOneWidget);
     });
   });
 }

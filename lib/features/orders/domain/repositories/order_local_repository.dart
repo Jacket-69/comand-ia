@@ -89,4 +89,20 @@ abstract class OrderLocalRepository {
     required PaymentMethod paymentMethod,
     int tipCents = 0,
   });
+
+  /// Retorna el pedido activo más reciente de la mesa, o null si no existe.
+  ///
+  /// Un pedido activo es aquel con status NOT IN (closed, cancelled).
+  /// Ordena por openedAt desc y toma el primero.
+  Future<CustomerOrder?> activeOrderForTable(
+    String venueId,
+    String diningTableId,
+  );
+
+  /// Re-deriva y persiste el estado del pedido desde sus ítems no-cancelados.
+  ///
+  /// Delega en la misma lógica interna de derivación usada por [updateItemStatus].
+  /// Útil para recalcular el estado del pedido tras agregar ítems nuevos en
+  /// modo append (los ítems recién agregados entran como `sent`).
+  Future<void> recomputeOrderStatus(String orderId);
 }

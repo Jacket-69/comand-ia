@@ -51,6 +51,9 @@ class OrderDraftState {
     this.isConfirming = false,
     this.menuError,
     this.confirmedOrder,
+    this.existingOrderId,
+    this.existingOrderTotalCents = 0,
+    this.existingItemCount = 0,
   });
 
   /// ID de la mesa (string, calza con los IDs del grid mock).
@@ -83,6 +86,18 @@ class OrderDraftState {
   /// Pedido persistido y enviado (disponible tras confirm exitoso).
   final CustomerOrder? confirmedOrder;
 
+  /// ID del pedido activo existente en la mesa (no null → append mode).
+  final String? existingOrderId;
+
+  /// Total actual del pedido existente en centavos (solo informativo en UI).
+  final int existingOrderTotalCents;
+
+  /// Cantidad de ítems no-cancelados del pedido existente (solo informativo).
+  final int existingItemCount;
+
+  /// Verdadero cuando se está agregando a un pedido activo (no creando uno nuevo).
+  bool get isAppendMode => existingOrderId != null;
+
   /// Subtotal del borrador en centavos. ACID-3: NO incluye propina.
   int get subtotalCents => lines.fold(0, (acc, line) => acc + line.lineCents);
 
@@ -107,6 +122,10 @@ class OrderDraftState {
     String? menuError,
     bool clearMenuError = false,
     CustomerOrder? confirmedOrder,
+    String? existingOrderId,
+    bool clearExistingOrderId = false,
+    int? existingOrderTotalCents,
+    int? existingItemCount,
   }) {
     return OrderDraftState(
       tableId: tableId,
@@ -120,6 +139,11 @@ class OrderDraftState {
       isConfirming: isConfirming ?? this.isConfirming,
       menuError: clearMenuError ? null : menuError ?? this.menuError,
       confirmedOrder: confirmedOrder ?? this.confirmedOrder,
+      existingOrderId:
+          clearExistingOrderId ? null : existingOrderId ?? this.existingOrderId,
+      existingOrderTotalCents:
+          existingOrderTotalCents ?? this.existingOrderTotalCents,
+      existingItemCount: existingItemCount ?? this.existingItemCount,
     );
   }
 }
@@ -143,6 +167,45 @@ class OrderDraftController extends StateNotifier<OrderDraftState> {
     _loadCategories();
   }
 
+  // ─── Carga del pedido activo ───────────────────────────────────────────────
+
+  /// Carga el pedido activo de la mesa (si existe) para entrar en append mode.
+  Future<void> _loadActiveOrder() async {
+    try {
+      final user = _ref.read(currentUserProvider);
+      final venueId = user?.venueId ?? 'venue-001-mock';
+      final orderRepo = _ref.read(orderLocalRepositoryProvider);
+      final active = await orderRepo.activeOrderForTable(
+        venueId,
+        state.tableId,
+      );
+      if (active != null) {
+        final items = await orderRepo.itemsOf(active.id);
+        final nonCancelledCount = items
+            .where((i) => i.status.toDb() != 'cancelled')
+            .fold<int>(0, (acc, i) => acc + i.quantity);
+        state = state.copyWith(
+          existingOrderId: active.id,
+          existingOrderTotalCents: active.totalCents,
+          existingItemCount: nonCancelledCount,
+        );
+        AppLogger.info(
+          'Modo append: pedido existente ${active.id} (mesa ${state.tableId}, '
+          'total ${active.totalCents} cts, $nonCancelledCount ítems).',
+          tag: 'OrderDraft',
+        );
+      }
+    } catch (e, st) {
+      // No bloqueamos la pantalla si falla la carga del pedido activo.
+      AppLogger.error(
+        'Error cargando pedido activo de la mesa',
+        error: e,
+        stackTrace: st,
+        tag: 'OrderDraft',
+      );
+    }
+  }
+
   final Ref _ref;
 
   // ─── Carga de menú ─────────────────────────────────────────────────────────
@@ -155,6 +218,8 @@ class OrderDraftController extends StateNotifier<OrderDraftState> {
       final repo = _ref.read(menuLocalRepositoryProvider);
       final cats = await repo.categories(venueId);
       state = state.copyWith(categories: cats, isLoadingMenu: false);
+      // Tras cargar el menú, detectar si la mesa tiene un pedido activo.
+      await _loadActiveOrder();
     } catch (e, st) {
       AppLogger.error(
         'Error cargando categorías',
@@ -295,13 +360,19 @@ class OrderDraftController extends StateNotifier<OrderDraftState> {
 
   /// Persiste el borrador como pedido enviado a cocina.
   ///
-  /// Flujo:
+  /// Append mode ([isAppendMode] == true): agrega los ítems del borrador al
+  /// pedido activo existente y encola un [PendingOpType.updateOrderItem] por
+  /// cada línea. Luego re-deriva el estado del pedido.
+  ///
+  /// Modo nuevo ([isAppendMode] == false): flujo clásico COMA-007:
   ///   1. `createOrder` en Drift (estado `open`, totalCents = 0).
-  ///   2. Por cada línea: `addItem` (snapshot inmutable ACID-2; recalcula total ACID-3).
+  ///   2. Por cada línea: `addItem` (snapshot inmutable ACID-2; recalcula ACID-3).
   ///   3. `updateStatus` → `sent`.
   ///   4. Encola `PendingOpType.createOrder` (offline-first ACID-7).
   ///
-  /// Retorna el [CustomerOrder] confirmado, o lanza excepción si falla.
+  /// En ambos casos: limpia el borrador (lines = [], categoría) tras éxito (Fix #2).
+  ///
+  /// Retorna el [CustomerOrder] resultante, o lanza excepción si falla.
   Future<CustomerOrder> confirm() async {
     if (!state.hasLines) {
       throw StateError('No hay ítems en el borrador para confirmar.');
@@ -315,62 +386,148 @@ class OrderDraftController extends StateNotifier<OrderDraftState> {
       final orderRepo = _ref.read(orderLocalRepositoryProvider);
       final opQueue = _ref.read(pendingOpQueueProvider);
 
-      // 1. Crear pedido (estado open, total = 0)
-      final order = await orderRepo.createOrder(
-        venueId: venueId,
-        diningTableId: state.tableId,
-        openedBy: user?.id,
-      );
+      // Captura las líneas actuales antes de limpiar el borrador.
+      final linesToCommit = List<DraftLine>.from(state.lines);
 
-      // 2. Agregar cada línea (snapshot inmutable ACID-2; recalcula total ACID-3)
-      for (final line in state.lines) {
-        await orderRepo.addItem(
-          orderId: order.id,
-          menuItem: line.menuItem,
-          quantity: line.quantity,
-          comments: line.comments,
+      CustomerOrder resultOrder;
+
+      if (state.isAppendMode) {
+        // ── Append mode: agregar ítems al pedido existente ──────────────────
+        final orderId = state.existingOrderId!;
+
+        for (final line in linesToCommit) {
+          // Agrega ítem al pedido existente (snapshot inmutable ACID-2;
+          // _recalculateTotal actualiza totalCents ACID-3).
+          await orderRepo.addItem(
+            orderId: orderId,
+            menuItem: line.menuItem,
+            quantity: line.quantity,
+            comments: line.comments,
+          );
+
+          // Encola updateOrderItem para sync offline (ACID-7).
+          await opQueue.enqueue(
+            venueId: venueId,
+            opType: PendingOpType.updateOrderItem,
+            payload: {
+              'order_id': orderId,
+              'venue_id': venueId,
+              'menu_item_id': line.menuItem.id,
+              'name_snapshot': line.menuItem.name,
+              'price_cents_snapshot': line.menuItem.priceCents,
+              'quantity': line.quantity,
+              'status': 'sent',
+              if (line.comments != null) 'comments': line.comments,
+            },
+          );
+        }
+
+        // Re-deriva el estado del pedido desde sus ítems (recién agregados
+        // entran como sent, lo que puede cambiar el estado global).
+        await orderRepo.recomputeOrderStatus(orderId);
+
+        // Refresca los contadores del pedido existente en el estado.
+        final refreshed = await orderRepo.orderById(orderId);
+        final allItems = await orderRepo.itemsOf(orderId);
+        final nonCancelledCount = allItems
+            .where((i) => i.status.toDb() != 'cancelled')
+            .fold<int>(0, (acc, i) => acc + i.quantity);
+
+        resultOrder = refreshed!;
+
+        AppLogger.info(
+          'Ítems agregados al pedido $orderId (mesa ${state.tableId}, '
+          'total ${resultOrder.totalCents} cts).',
+          tag: 'OrderDraft',
+        );
+
+        // Limpia el borrador y actualiza los contadores del pedido activo (Fix #2).
+        state = state.copyWith(
+          isConfirming: false,
+          confirmedOrder: resultOrder,
+          lines: [],
+          clearCategory: true,
+          existingOrderTotalCents: resultOrder.totalCents,
+          existingItemCount: nonCancelledCount,
+        );
+      } else {
+        // ── Modo nuevo: crear pedido desde cero ─────────────────────────────
+
+        // 1. Crear pedido (estado open, total = 0)
+        final order = await orderRepo.createOrder(
+          venueId: venueId,
+          diningTableId: state.tableId,
+          openedBy: user?.id,
+        );
+
+        // 2. Agregar cada línea (snapshot inmutable ACID-2; recalcula ACID-3)
+        for (final line in linesToCommit) {
+          await orderRepo.addItem(
+            orderId: order.id,
+            menuItem: line.menuItem,
+            quantity: line.quantity,
+            comments: line.comments,
+          );
+        }
+
+        // 3. Cambiar estado a `sent` (COMA-007)
+        final sentOrder = await orderRepo.updateStatus(
+          order.id,
+          OrderStatus.sent,
+        );
+
+        // 4. Encolar para sync offline (ACID-7)
+        await opQueue.enqueue(
+          venueId: venueId,
+          opType: PendingOpType.createOrder,
+          payload: {
+            'order_id': sentOrder.id,
+            'dining_table_id': state.tableId,
+            'venue_id': venueId,
+            'opened_by': user?.id,
+            'opened_at': sentOrder.openedAt.toIso8601String(),
+            'total_cents': sentOrder.totalCents,
+            'items':
+                linesToCommit
+                    .map(
+                      (l) => {
+                        'menu_item_id': l.menuItem.id,
+                        'name_snapshot': l.menuItem.name,
+                        'price_cents_snapshot': l.menuItem.priceCents,
+                        'quantity': l.quantity,
+                        if (l.comments != null) 'comments': l.comments,
+                      },
+                    )
+                    .toList(),
+          },
+        );
+
+        resultOrder = sentOrder;
+
+        AppLogger.info(
+          'Pedido ${sentOrder.id} creado (mesa ${state.tableId}, total ${sentOrder.totalCents} cts).',
+          tag: 'OrderDraft',
+        );
+
+        // Limpia el borrador y entra en append mode para la misma sesión (Fix #2).
+        // Al confirmar por primera vez, el nuevo pedido pasa a ser el existingOrderId.
+        final allItems = await orderRepo.itemsOf(sentOrder.id);
+        final nonCancelledCount = allItems
+            .where((i) => i.status.toDb() != 'cancelled')
+            .fold<int>(0, (acc, i) => acc + i.quantity);
+
+        state = state.copyWith(
+          isConfirming: false,
+          confirmedOrder: resultOrder,
+          lines: [],
+          clearCategory: true,
+          existingOrderId: sentOrder.id,
+          existingOrderTotalCents: sentOrder.totalCents,
+          existingItemCount: nonCancelledCount,
         );
       }
 
-      // 3. Cambiar estado a `sent` (COMA-007)
-      final sentOrder = await orderRepo.updateStatus(
-        order.id,
-        OrderStatus.sent,
-      );
-
-      // 4. Encolar para sync offline (ACID-7)
-      await opQueue.enqueue(
-        venueId: venueId,
-        opType: PendingOpType.createOrder,
-        payload: {
-          'order_id': sentOrder.id,
-          'dining_table_id': state.tableId,
-          'venue_id': venueId,
-          'opened_by': user?.id,
-          'opened_at': sentOrder.openedAt.toIso8601String(),
-          'total_cents': sentOrder.totalCents,
-          'items':
-              state.lines
-                  .map(
-                    (l) => {
-                      'menu_item_id': l.menuItem.id,
-                      'name_snapshot': l.menuItem.name,
-                      'price_cents_snapshot': l.menuItem.priceCents,
-                      'quantity': l.quantity,
-                      if (l.comments != null) 'comments': l.comments,
-                    },
-                  )
-                  .toList(),
-        },
-      );
-
-      AppLogger.info(
-        'Pedido ${sentOrder.id} confirmado (mesa ${state.tableId}, total ${sentOrder.totalCents} cts).',
-        tag: 'OrderDraft',
-      );
-
-      state = state.copyWith(isConfirming: false, confirmedOrder: sentOrder);
-      return sentOrder;
+      return resultOrder;
     } catch (e, st) {
       AppLogger.error(
         'Error al confirmar pedido',

@@ -179,7 +179,7 @@ void main() {
     });
   });
 
-  group('OrderDraftController.confirm', () {
+  group('OrderDraftController.confirm (modo nuevo)', () {
     test('persiste pedido en Drift con status sent', () async {
       final ctrl = makeCtrl('2');
       ctrl.addItem(_item1);
@@ -239,6 +239,88 @@ void main() {
       final ctrl = makeCtrl('6');
       await expectLater(ctrl.confirm(), throwsA(isA<StateError>()));
     });
+
+    test('limpia líneas del borrador tras confirmar (Fix #2)', () async {
+      final ctrl = makeCtrl('20');
+      ctrl.addItem(_item1);
+      ctrl.addItem(_item2);
+      expect(ctrl.state.lines.length, 2);
+
+      await ctrl.confirm();
+
+      // El borrador debe quedar limpio
+      expect(ctrl.state.lines, isEmpty);
+    });
+
+    test('entra en append mode tras confirmar el primer pedido', () async {
+      final ctrl = makeCtrl('21');
+      ctrl.addItem(_item1);
+
+      final confirmed = await ctrl.confirm();
+
+      expect(ctrl.state.isAppendMode, isTrue);
+      expect(ctrl.state.existingOrderId, confirmed.id);
+    });
+  });
+
+  group('OrderDraftController.confirm (append mode)', () {
+    test('agrega ítems al pedido existente sin crear uno nuevo', () async {
+      // Crear pedido inicial directamente en el repo
+      final orderRepo = DriftOrderLocalRepository(db);
+      final existing = await orderRepo.createOrder(
+        venueId: kVenueId,
+        diningTableId: 'table-30',
+      );
+      await orderRepo.addItem(orderId: existing.id, menuItem: _item1);
+      await orderRepo.updateStatus(existing.id, OrderStatus.sent);
+
+      // El controller carga el pedido activo de la mesa al inicializar.
+      // Se espera a que termine _loadCategories + _loadActiveOrder.
+      final ctrl = makeCtrl('table-30');
+      // Dar tiempo al controller para cargar el menú y el pedido activo.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(ctrl.state.isAppendMode, isTrue);
+      expect(ctrl.state.existingOrderId, existing.id);
+
+      // Agrega un ítem nuevo en el borrador
+      ctrl.addItem(_item2);
+      await ctrl.confirm();
+
+      // El borrador debe quedar limpio (Fix #2)
+      expect(ctrl.state.lines, isEmpty);
+
+      // El pedido debe tener 2 ítems en total
+      final items = await orderRepo.itemsOf(existing.id);
+      expect(items.length, 2);
+    });
+
+    test(
+      'encola updateOrderItem por cada ítem agregado en append mode',
+      () async {
+        final orderRepo = DriftOrderLocalRepository(db);
+        final existing = await orderRepo.createOrder(
+          venueId: kVenueId,
+          diningTableId: 'table-31',
+        );
+        await orderRepo.addItem(orderId: existing.id, menuItem: _item1);
+        await orderRepo.updateStatus(existing.id, OrderStatus.sent);
+
+        final ctrl = makeCtrl('table-31');
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        ctrl.addItem(_item2);
+        await ctrl.confirm();
+
+        final opQueue = DriftPendingOpQueue(db);
+        final ops = await opQueue.peek(kVenueId);
+        // Debe haber al menos un op de tipo update_order_item
+        expect(
+          ops.any((op) => op.opType.toDb() == 'update_order_item'),
+          isTrue,
+        );
+      },
+    );
   });
 
   group('OrderDraftController.selectCategory', () {
