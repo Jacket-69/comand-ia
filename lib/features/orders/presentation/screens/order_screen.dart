@@ -483,8 +483,8 @@ class _MenuItemCard extends StatelessWidget {
 /// En append mode muestra:
 ///   - Banner con el total y cuenta del pedido activo.
 ///   - Botón primario "Agregar a cocina" (solo si hay líneas en el borrador).
-///   - Botón secundario "Pedir la cuenta" (siempre disponible en append mode).
 ///
+/// El cobro se inicia desde la hoja de acciones de la mesa (grid), no desde aquí.
 /// En modo nuevo muestra el flujo clásico con "Enviar a Cocina".
 class _OrderPanel extends ConsumerWidget {
   const _OrderPanel({required this.tableId, required this.state});
@@ -664,15 +664,6 @@ class _OrderPanel extends ConsumerWidget {
                           : 'Enviar a Cocina',
                     ),
           ),
-
-          // Botón "Pedir la cuenta" (solo append mode — siempre disponible)
-          if (state.isAppendMode) ...[
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () => context.go('/checkout/${state.existingOrderId}'),
-              child: const Text('Pedir la cuenta'),
-            ),
-          ],
         ],
       ),
     );
