@@ -17,6 +17,11 @@ class Env {
     defaultValue: '',
   );
 
+  /// Verdadero si hay configuración Supabase (vía `--dart-define`).
+  ///
+  /// Sin anon key la app corre 100 % local (Drift) y el sync queda dormido.
+  static bool get hasSupabaseConfig => supabaseAnonKey.isNotEmpty;
+
   /// DSN de Sentry para captura de excepciones.
   static const sentryDsn = String.fromEnvironment(
     'SENTRY_DSN',

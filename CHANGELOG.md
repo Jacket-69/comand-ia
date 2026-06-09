@@ -8,6 +8,7 @@ Versionado: una entrada por **entrega académica** del semestre (no SemVer estri
 ## [Unreleased]
 
 ### Added
+- Sincronización offline → Supabase (COMA-008): `SyncService` drena la cola FIFO `pending_op` por venue con backoff exponencial (2^attempts s, cap 5 min), idempotencia por UUID de cliente, dead-letter para errores permanentes y adopción LWW del `updated_at` del servidor. Estado observable de "sync degradada" para el owner. Migración Drift v4 (`status`/`last_error` en `pending_ops`) y migración Supabase `0003_client_snapshots` (el trigger respeta los snapshots capturados offline, ACID-2). Detalle en ADR-0013.
 - Reorganización de `docs/` al árbol canónico de la metodología in-house (`Estructura de docs.md`): `product/`, `requirements/`, `architecture/`, `database/`, `quality/`, `security/`, `devops/`, `operations/`, `api/`.
 - Migración de los 8 ADRs de `docs/decisiones.md` a archivos MADR separados en `docs/architecture/decisions/`.
 - `CHANGELOG.md` en raíz siguiendo Keep a Changelog 1.1.0.

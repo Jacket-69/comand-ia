@@ -86,7 +86,8 @@ class CheckoutController extends StateNotifier<CheckoutState> {
         tipCents: tipCents,
       );
 
-      // 2. Encolar operación para sync offline (ACID-7)
+      // 2. Encolar operación para sync offline (ACID-7). Sin total_cents:
+      //    lo recalcula el trigger del servidor (ACID-3).
       await opQueue.enqueue(
         venueId: venueId,
         opType: PendingOpType.closeOrder,
@@ -95,7 +96,6 @@ class CheckoutController extends StateNotifier<CheckoutState> {
           'venue_id': venueId,
           'payment_method': paymentMethod.toDb(),
           'tip_cents': tipCents,
-          'total_cents': closed.totalCents,
           'closed_at': closed.closedAt!.toIso8601String(),
         },
       );

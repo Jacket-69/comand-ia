@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:comand_ia/features/orders/data/local/app_database.dart';
 import 'package:comand_ia/features/orders/data/local/repositories/drift_order_local_repository.dart';
 import 'package:comand_ia/features/orders/data/local/repositories/drift_pending_op_queue.dart';
@@ -296,7 +298,7 @@ void main() {
     });
 
     test(
-      'encola updateOrderItem por cada ítem agregado en append mode',
+      'encola addOrderItem con el UUID del ítem por cada agregado en append',
       () async {
         final orderRepo = DriftOrderLocalRepository(db);
         final existing = await orderRepo.createOrder(
@@ -314,11 +316,20 @@ void main() {
 
         final opQueue = DriftPendingOpQueue(db);
         final ops = await opQueue.peek(kVenueId);
-        // Debe haber al menos un op de tipo update_order_item
-        expect(
-          ops.any((op) => op.opType.toDb() == 'update_order_item'),
-          isTrue,
-        );
+        final addOps =
+            ops.where((op) => op.opType.toDb() == 'add_order_item').toList();
+        expect(addOps, hasLength(1));
+
+        // El payload lleva el UUID local del ítem (idempotencia del sync) y
+        // sus snapshots (ACID-2).
+        final payload =
+            jsonDecode(addOps.single.payload) as Map<String, dynamic>;
+        final items = await orderRepo.itemsOf(existing.id);
+        final appended = items.firstWhere((i) => i.menuItemId == _item2.id);
+        expect(payload['order_item_id'], appended.id);
+        expect(payload['order_id'], existing.id);
+        expect(payload['name_snapshot'], _item2.name);
+        expect(payload['price_cents_snapshot'], _item2.priceCents);
       },
     );
   });

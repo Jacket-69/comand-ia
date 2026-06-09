@@ -54,7 +54,22 @@ El schema canónico vive en:
 |---|---|---|---|---|
 | `tip_cents` | `INT` | `0` | `CHECK (tip_cents >= 0)` | Propina decidida por el comensal en caja. **Separada de `total_cents`** (ACID-3): `total_cents` = solo ítems; `tip_cents` no entra al total. Se escribe al cerrar la cuenta. |
 
+#### `0003_client_snapshots` (COMA-008)
+
+Cambio de comportamiento del trigger `validate_order_item` ([ADR-0013](../architecture/decisions/0013-drenaje-sync-idempotencia-dead-letter.md)): en INSERT respeta `name_snapshot`/`price_cents_snapshot` provistos por el cliente (capturados offline al momento del pedido, ACID-2) y solo los rellena desde `menu_item` cuando `name_snapshot` viene vacío (`''`) o NULL — el sentinel del seed y de inserts server-side. En UPDATE siguen inmutables (restaurados desde OLD). Test pgTAP: `client_snapshots.sql`.
+
 Si los tres divergen, la migración SQL gana. Hay que regenerar `db_types.dart` y actualizar `model.md` en el mismo PR.
+
+### Escrituras del SyncService (COMA-008)
+
+El drenaje de `pending_op` escribe directo sobre las tablas con la RLS del usuario autenticado (sin RPC de sync, coherente con BaaS-only):
+
+- `customer_order`: upsert con `ignoreDuplicates` (`id` generado en cliente) para `create_order`; UPDATE para cierre (`status='closed'` + `payment_method` + `tip_cents` en una sola operación, ACID-4) y cambio de estado.
+- `order_item`: upsert con `ignoreDuplicates` (`id` generado en cliente) para ítems nuevos; UPDATE de `status` para el avance del KDS.
+- **Jamás envía** `total_cents` (trigger `compute_order_total`, ACID-3) ni `updated_at` (trigger `set_updated_at`, LWW).
+- Requiere sesión Supabase cuyo `auth.uid()` mapee a un `app_user` activo del venue (las policies `*_venue_access` resuelven por `current_venue_id()`); la identidad por PIN de `verify_pin` es app-level y no habilita el drenaje.
+
+Detalle de payloads y clasificación de errores: [sync/offline-first.md](../sync/offline-first.md).
 
 ## RPCs documentadas
 

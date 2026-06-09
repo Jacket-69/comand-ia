@@ -3012,6 +3012,27 @@ class $PendingOpsTable extends PendingOps
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3020,6 +3041,8 @@ class $PendingOpsTable extends PendingOps
     payload,
     createdAt,
     attempts,
+    status,
+    lastError,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3072,6 +3095,18 @@ class $PendingOpsTable extends PendingOps
         attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta),
       );
     }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
     return context;
   }
 
@@ -3111,6 +3146,15 @@ class $PendingOpsTable extends PendingOps
             DriftSqlType.int,
             data['${effectivePrefix}attempts'],
           )!,
+      status:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}status'],
+          )!,
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
     );
   }
 
@@ -3138,6 +3182,16 @@ class PendingOpRow extends DataClass implements Insertable<PendingOpRow> {
 
   /// Número de intentos de sync realizados (base del backoff exponencial).
   final int attempts;
+
+  /// Estado en la cola: 'pending' (participa del drenaje FIFO) o 'dead'
+  /// (descartada por error permanente del servidor; se conserva para
+  /// diagnóstico sin bloquear la cola — COMA-008). Default 'pending' para
+  /// que el ALTER ADD COLUMN de la migración v3→v4 sea válido sobre filas
+  /// preexistentes (SQLite exige default en columnas NOT NULL nuevas).
+  final String status;
+
+  /// Último error de sincronización registrado (null si nunca falló).
+  final String? lastError;
   const PendingOpRow({
     required this.id,
     required this.venueId,
@@ -3145,6 +3199,8 @@ class PendingOpRow extends DataClass implements Insertable<PendingOpRow> {
     required this.payload,
     required this.createdAt,
     required this.attempts,
+    required this.status,
+    this.lastError,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3155,6 +3211,10 @@ class PendingOpRow extends DataClass implements Insertable<PendingOpRow> {
     map['payload'] = Variable<String>(payload);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['attempts'] = Variable<int>(attempts);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
     return map;
   }
 
@@ -3166,6 +3226,11 @@ class PendingOpRow extends DataClass implements Insertable<PendingOpRow> {
       payload: Value(payload),
       createdAt: Value(createdAt),
       attempts: Value(attempts),
+      status: Value(status),
+      lastError:
+          lastError == null && nullToAbsent
+              ? const Value.absent()
+              : Value(lastError),
     );
   }
 
@@ -3181,6 +3246,8 @@ class PendingOpRow extends DataClass implements Insertable<PendingOpRow> {
       payload: serializer.fromJson<String>(json['payload']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       attempts: serializer.fromJson<int>(json['attempts']),
+      status: serializer.fromJson<String>(json['status']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
     );
   }
   @override
@@ -3193,6 +3260,8 @@ class PendingOpRow extends DataClass implements Insertable<PendingOpRow> {
       'payload': serializer.toJson<String>(payload),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'attempts': serializer.toJson<int>(attempts),
+      'status': serializer.toJson<String>(status),
+      'lastError': serializer.toJson<String?>(lastError),
     };
   }
 
@@ -3203,6 +3272,8 @@ class PendingOpRow extends DataClass implements Insertable<PendingOpRow> {
     String? payload,
     DateTime? createdAt,
     int? attempts,
+    String? status,
+    Value<String?> lastError = const Value.absent(),
   }) => PendingOpRow(
     id: id ?? this.id,
     venueId: venueId ?? this.venueId,
@@ -3210,6 +3281,8 @@ class PendingOpRow extends DataClass implements Insertable<PendingOpRow> {
     payload: payload ?? this.payload,
     createdAt: createdAt ?? this.createdAt,
     attempts: attempts ?? this.attempts,
+    status: status ?? this.status,
+    lastError: lastError.present ? lastError.value : this.lastError,
   );
   PendingOpRow copyWithCompanion(PendingOpsCompanion data) {
     return PendingOpRow(
@@ -3219,6 +3292,8 @@ class PendingOpRow extends DataClass implements Insertable<PendingOpRow> {
       payload: data.payload.present ? data.payload.value : this.payload,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       attempts: data.attempts.present ? data.attempts.value : this.attempts,
+      status: data.status.present ? data.status.value : this.status,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
     );
   }
 
@@ -3230,14 +3305,24 @@ class PendingOpRow extends DataClass implements Insertable<PendingOpRow> {
           ..write('opType: $opType, ')
           ..write('payload: $payload, ')
           ..write('createdAt: $createdAt, ')
-          ..write('attempts: $attempts')
+          ..write('attempts: $attempts, ')
+          ..write('status: $status, ')
+          ..write('lastError: $lastError')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, venueId, opType, payload, createdAt, attempts);
+  int get hashCode => Object.hash(
+    id,
+    venueId,
+    opType,
+    payload,
+    createdAt,
+    attempts,
+    status,
+    lastError,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3247,7 +3332,9 @@ class PendingOpRow extends DataClass implements Insertable<PendingOpRow> {
           other.opType == this.opType &&
           other.payload == this.payload &&
           other.createdAt == this.createdAt &&
-          other.attempts == this.attempts);
+          other.attempts == this.attempts &&
+          other.status == this.status &&
+          other.lastError == this.lastError);
 }
 
 class PendingOpsCompanion extends UpdateCompanion<PendingOpRow> {
@@ -3257,6 +3344,8 @@ class PendingOpsCompanion extends UpdateCompanion<PendingOpRow> {
   final Value<String> payload;
   final Value<DateTime> createdAt;
   final Value<int> attempts;
+  final Value<String> status;
+  final Value<String?> lastError;
   const PendingOpsCompanion({
     this.id = const Value.absent(),
     this.venueId = const Value.absent(),
@@ -3264,6 +3353,8 @@ class PendingOpsCompanion extends UpdateCompanion<PendingOpRow> {
     this.payload = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.attempts = const Value.absent(),
+    this.status = const Value.absent(),
+    this.lastError = const Value.absent(),
   });
   PendingOpsCompanion.insert({
     this.id = const Value.absent(),
@@ -3272,6 +3363,8 @@ class PendingOpsCompanion extends UpdateCompanion<PendingOpRow> {
     required String payload,
     this.createdAt = const Value.absent(),
     this.attempts = const Value.absent(),
+    this.status = const Value.absent(),
+    this.lastError = const Value.absent(),
   }) : venueId = Value(venueId),
        opType = Value(opType),
        payload = Value(payload);
@@ -3282,6 +3375,8 @@ class PendingOpsCompanion extends UpdateCompanion<PendingOpRow> {
     Expression<String>? payload,
     Expression<DateTime>? createdAt,
     Expression<int>? attempts,
+    Expression<String>? status,
+    Expression<String>? lastError,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3290,6 +3385,8 @@ class PendingOpsCompanion extends UpdateCompanion<PendingOpRow> {
       if (payload != null) 'payload': payload,
       if (createdAt != null) 'created_at': createdAt,
       if (attempts != null) 'attempts': attempts,
+      if (status != null) 'status': status,
+      if (lastError != null) 'last_error': lastError,
     });
   }
 
@@ -3300,6 +3397,8 @@ class PendingOpsCompanion extends UpdateCompanion<PendingOpRow> {
     Value<String>? payload,
     Value<DateTime>? createdAt,
     Value<int>? attempts,
+    Value<String>? status,
+    Value<String?>? lastError,
   }) {
     return PendingOpsCompanion(
       id: id ?? this.id,
@@ -3308,6 +3407,8 @@ class PendingOpsCompanion extends UpdateCompanion<PendingOpRow> {
       payload: payload ?? this.payload,
       createdAt: createdAt ?? this.createdAt,
       attempts: attempts ?? this.attempts,
+      status: status ?? this.status,
+      lastError: lastError ?? this.lastError,
     );
   }
 
@@ -3332,6 +3433,12 @@ class PendingOpsCompanion extends UpdateCompanion<PendingOpRow> {
     if (attempts.present) {
       map['attempts'] = Variable<int>(attempts.value);
     }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
     return map;
   }
 
@@ -3343,7 +3450,9 @@ class PendingOpsCompanion extends UpdateCompanion<PendingOpRow> {
           ..write('opType: $opType, ')
           ..write('payload: $payload, ')
           ..write('createdAt: $createdAt, ')
-          ..write('attempts: $attempts')
+          ..write('attempts: $attempts, ')
+          ..write('status: $status, ')
+          ..write('lastError: $lastError')
           ..write(')'))
         .toString();
   }
@@ -4834,6 +4943,8 @@ typedef $$PendingOpsTableCreateCompanionBuilder =
       required String payload,
       Value<DateTime> createdAt,
       Value<int> attempts,
+      Value<String> status,
+      Value<String?> lastError,
     });
 typedef $$PendingOpsTableUpdateCompanionBuilder =
     PendingOpsCompanion Function({
@@ -4843,6 +4954,8 @@ typedef $$PendingOpsTableUpdateCompanionBuilder =
       Value<String> payload,
       Value<DateTime> createdAt,
       Value<int> attempts,
+      Value<String> status,
+      Value<String?> lastError,
     });
 
 class $$PendingOpsTableFilterComposer
@@ -4881,6 +4994,16 @@ class $$PendingOpsTableFilterComposer
 
   ColumnFilters<int> get attempts => $composableBuilder(
     column: $table.attempts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4923,6 +5046,16 @@ class $$PendingOpsTableOrderingComposer
     column: $table.attempts,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PendingOpsTableAnnotationComposer
@@ -4951,6 +5084,12 @@ class $$PendingOpsTableAnnotationComposer
 
   GeneratedColumn<int> get attempts =>
       $composableBuilder(column: $table.attempts, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
 }
 
 class $$PendingOpsTableTableManager
@@ -4990,6 +5129,8 @@ class $$PendingOpsTableTableManager
                 Value<String> payload = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> attempts = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
               }) => PendingOpsCompanion(
                 id: id,
                 venueId: venueId,
@@ -4997,6 +5138,8 @@ class $$PendingOpsTableTableManager
                 payload: payload,
                 createdAt: createdAt,
                 attempts: attempts,
+                status: status,
+                lastError: lastError,
               ),
           createCompanionCallback:
               ({
@@ -5006,6 +5149,8 @@ class $$PendingOpsTableTableManager
                 required String payload,
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> attempts = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
               }) => PendingOpsCompanion.insert(
                 id: id,
                 venueId: venueId,
@@ -5013,6 +5158,8 @@ class $$PendingOpsTableTableManager
                 payload: payload,
                 createdAt: createdAt,
                 attempts: attempts,
+                status: status,
+                lastError: lastError,
               ),
           withReferenceMapper:
               (p0) =>
