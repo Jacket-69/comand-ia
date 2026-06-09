@@ -224,6 +224,102 @@ void main() {
     });
   });
 
+  group('markAttempt con error', () {
+    test('registra el último error sin tocar el status', () async {
+      final id = await queue.enqueue(
+        venueId: 'venue-A',
+        opType: PendingOpType.createOrder,
+        payload: {},
+      );
+
+      await queue.markAttempt(id, error: 'red caída');
+
+      final op = await queue.head('venue-A');
+      expect(op!.attempts, 1);
+      expect(op.lastError, 'red caída');
+      expect(op.status, PendingOpStatus.pending);
+    });
+  });
+
+  group('markDead (dead-letter, COMA-008)', () {
+    test(
+      'la op dead sale de peek/head pero se conserva con su error',
+      () async {
+        final id1 = await queue.enqueue(
+          venueId: 'venue-A',
+          opType: PendingOpType.createOrder,
+          payload: {'seq': 1},
+        );
+        await queue.enqueue(
+          venueId: 'venue-A',
+          opType: PendingOpType.closeOrder,
+          payload: {'seq': 2},
+        );
+
+        await queue.markDead(id1, '23503: FK inválida');
+
+        // La cola sigue: la siguiente op pasa a ser la cabeza (ACID-7 sin
+        // head-of-line blocking permanente).
+        final head = await queue.head('venue-A');
+        expect(head!.opType, PendingOpType.closeOrder);
+
+        final pending = await queue.peek('venue-A');
+        expect(pending, hasLength(1));
+
+        // La fila dead sigue existiendo para diagnóstico.
+        final rows = await db.select(db.pendingOps).get();
+        final deadRow = rows.singleWhere((r) => r.id == id1);
+        expect(deadRow.status, 'dead');
+        expect(deadRow.lastError, '23503: FK inválida');
+      },
+    );
+  });
+
+  group('venuesWithPending', () {
+    test('retorna los venues con ops pending, sin duplicados', () async {
+      await queue.enqueue(
+        venueId: 'venue-A',
+        opType: PendingOpType.createOrder,
+        payload: {},
+      );
+      await queue.enqueue(
+        venueId: 'venue-A',
+        opType: PendingOpType.closeOrder,
+        payload: {},
+      );
+      final idB = await queue.enqueue(
+        venueId: 'venue-B',
+        opType: PendingOpType.createOrder,
+        payload: {},
+      );
+
+      expect((await queue.venuesWithPending())..sort(), ['venue-A', 'venue-B']);
+
+      // Un venue cuya única op murió ya no aparece.
+      await queue.markDead(idB, 'error permanente');
+      expect(await queue.venuesWithPending(), ['venue-A']);
+    });
+  });
+
+  group('watchPendingCount', () {
+    test('emite el total de ops pending y reacciona a cambios', () async {
+      final counts = <int>[];
+      final sub = queue.watchPendingCount().listen(counts.add);
+      addTearDown(sub.cancel);
+
+      final id = await queue.enqueue(
+        venueId: 'venue-A',
+        opType: PendingOpType.createOrder,
+        payload: {},
+      );
+      await pumpEventQueue();
+      await queue.remove(id);
+      await pumpEventQueue();
+
+      expect(counts, containsAllInOrder([1, 0]));
+    });
+  });
+
   group('conversión PendingOpType round-trip', () {
     test('todos los tipos sobreviven enqueue + peek', () async {
       final types = PendingOpType.values;

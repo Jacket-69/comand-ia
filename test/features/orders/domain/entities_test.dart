@@ -180,6 +180,10 @@ void main() {
     test('fromDb convierte todos los valores válidos', () {
       expect(PendingOpType.fromDb('create_order'), PendingOpType.createOrder);
       expect(
+        PendingOpType.fromDb('add_order_item'),
+        PendingOpType.addOrderItem,
+      );
+      expect(
         PendingOpType.fromDb('update_order_item'),
         PendingOpType.updateOrderItem,
       );
@@ -192,6 +196,7 @@ void main() {
 
     test('toDb retorna el text snake_case correcto', () {
       expect(PendingOpType.createOrder.toDb(), 'create_order');
+      expect(PendingOpType.addOrderItem.toDb(), 'add_order_item');
       expect(PendingOpType.updateOrderItem.toDb(), 'update_order_item');
       expect(PendingOpType.closeOrder.toDb(), 'close_order');
       expect(PendingOpType.updateOrderStatus.toDb(), 'update_order_status');
@@ -202,6 +207,22 @@ void main() {
         () => PendingOpType.fromDb('delete_everything'),
         throwsArgumentError,
       );
+    });
+  });
+
+  group('PendingOpStatus conversión enum<->text', () {
+    test('fromDb convierte todos los valores válidos', () {
+      expect(PendingOpStatus.fromDb('pending'), PendingOpStatus.pending);
+      expect(PendingOpStatus.fromDb('dead'), PendingOpStatus.dead);
+    });
+
+    test('toDb retorna el text correcto', () {
+      expect(PendingOpStatus.pending.toDb(), 'pending');
+      expect(PendingOpStatus.dead.toDb(), 'dead');
+    });
+
+    test('fromDb lanza ArgumentError con valor desconocido', () {
+      expect(() => PendingOpStatus.fromDb('zombie'), throwsArgumentError);
     });
   });
 
@@ -301,6 +322,8 @@ void main() {
         '{"order_id":"x"}',
         now,
         0,
+        PendingOpStatus.pending,
+        null,
       ]);
     });
 

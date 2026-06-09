@@ -44,6 +44,24 @@ INSERT INTO auth.users (
     NOW()
   );
 
+-- GoTrue exige las columnas de token como cadena vacía, no NULL: si quedan en
+-- NULL el login real falla con "Database error querying schema". El INSERT
+-- directo a auth.users no las puebla, así que se normalizan acá. La app usa
+-- MockAuthRepository, pero esto desbloquea el auth real local (pruebas E2E).
+UPDATE auth.users
+SET confirmation_token = '',
+    recovery_token = '',
+    email_change = '',
+    email_change_token_new = '',
+    email_change_token_current = '',
+    phone_change = '',
+    phone_change_token = '',
+    reauthentication_token = ''
+WHERE id IN (
+  'b0000000-0000-0000-0000-000000000001',
+  'b0000000-0000-0000-0000-000000000002'
+);
+
 -- Venue de ejemplo
 INSERT INTO venue (id, owner_id, name, slug, timezone, currency)
 VALUES (

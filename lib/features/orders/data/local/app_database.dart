@@ -29,7 +29,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -45,6 +45,13 @@ class AppDatabase extends _$AppDatabase {
       // garantiza compatibilidad con pedidos preexistentes en SQLite.
       if (from < 3) {
         await m.addColumn(customerOrders, customerOrders.tipCents);
+      }
+      // v3 → v4: agrega 'status' y 'last_error' a pending_ops (COMA-008).
+      // Aditivo y no destructivo: las ops preexistentes quedan 'pending' por
+      // default y siguen participando del drenaje FIFO (ACID-7).
+      if (from < 4) {
+        await m.addColumn(pendingOps, pendingOps.status);
+        await m.addColumn(pendingOps, pendingOps.lastError);
       }
     },
   );

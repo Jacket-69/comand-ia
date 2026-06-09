@@ -1,6 +1,7 @@
 import 'package:comand_ia/app/router.dart';
 import 'package:comand_ia/app/theme.dart';
 import 'package:comand_ia/features/orders/presentation/providers/seed_provider.dart';
+import 'package:comand_ia/features/orders/presentation/providers/sync_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,6 +15,8 @@ class App extends ConsumerWidget {
     // Dispara el seed de dev en background al arrancar la app.
     // La pantalla de pedido espera este future antes de mostrar el menú.
     ref.watch(devSeedProvider);
+    // Arranca el SyncService de fondo (COMA-008). Null sin config Supabase.
+    ref.watch(syncServiceProvider);
 
     return MaterialApp.router(
       title: 'COMAND-IA',

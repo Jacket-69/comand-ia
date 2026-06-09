@@ -3,6 +3,7 @@ import 'package:comand_ia/features/auth/presentation/controllers/auth_controller
 import 'package:comand_ia/features/orders/domain/entities/customer_order.dart';
 import 'package:comand_ia/features/orders/domain/entities/menu_category.dart';
 import 'package:comand_ia/features/orders/domain/entities/menu_item.dart';
+import 'package:comand_ia/features/orders/domain/entities/order_item.dart';
 import 'package:comand_ia/features/orders/domain/entities/pending_op.dart';
 import 'package:comand_ia/features/orders/presentation/providers/database_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -361,7 +362,7 @@ class OrderDraftController extends StateNotifier<OrderDraftState> {
   /// Persiste el borrador como pedido enviado a cocina.
   ///
   /// Append mode ([isAppendMode] == true): agrega los ítems del borrador al
-  /// pedido activo existente y encola un [PendingOpType.updateOrderItem] por
+  /// pedido activo existente y encola un [PendingOpType.addOrderItem] por
   /// cada línea. Luego re-deriva el estado del pedido.
   ///
   /// Modo nuevo ([isAppendMode] == false): flujo clásico COMA-007:
@@ -398,26 +399,29 @@ class OrderDraftController extends StateNotifier<OrderDraftState> {
         for (final line in linesToCommit) {
           // Agrega ítem al pedido existente (snapshot inmutable ACID-2;
           // _recalculateTotal actualiza totalCents ACID-3).
-          await orderRepo.addItem(
+          final item = await orderRepo.addItem(
             orderId: orderId,
             menuItem: line.menuItem,
             quantity: line.quantity,
             comments: line.comments,
           );
 
-          // Encola updateOrderItem para sync offline (ACID-7).
+          // Encola addOrderItem para sync offline (ACID-7). El payload lleva
+          // el UUID local del ítem: el INSERT remoto es idempotente ante
+          // reintentos (mismo id → ya aplicado, no duplica).
           await opQueue.enqueue(
             venueId: venueId,
-            opType: PendingOpType.updateOrderItem,
+            opType: PendingOpType.addOrderItem,
             payload: {
+              'order_item_id': item.id,
               'order_id': orderId,
               'venue_id': venueId,
-              'menu_item_id': line.menuItem.id,
-              'name_snapshot': line.menuItem.name,
-              'price_cents_snapshot': line.menuItem.priceCents,
-              'quantity': line.quantity,
-              'status': 'sent',
-              if (line.comments != null) 'comments': line.comments,
+              'menu_item_id': item.menuItemId,
+              'name_snapshot': item.nameSnapshot,
+              'price_cents_snapshot': item.priceCentsSnapshot,
+              'quantity': item.quantity,
+              'status': item.status.toDb(),
+              if (item.comments != null) 'comments': item.comments,
             },
           );
         }
@@ -461,12 +465,15 @@ class OrderDraftController extends StateNotifier<OrderDraftState> {
         );
 
         // 2. Agregar cada línea (snapshot inmutable ACID-2; recalcula ACID-3)
+        final createdItems = <OrderItem>[];
         for (final line in linesToCommit) {
-          await orderRepo.addItem(
-            orderId: order.id,
-            menuItem: line.menuItem,
-            quantity: line.quantity,
-            comments: line.comments,
+          createdItems.add(
+            await orderRepo.addItem(
+              orderId: order.id,
+              menuItem: line.menuItem,
+              quantity: line.quantity,
+              comments: line.comments,
+            ),
           );
         }
 
@@ -476,7 +483,9 @@ class OrderDraftController extends StateNotifier<OrderDraftState> {
           OrderStatus.sent,
         );
 
-        // 4. Encolar para sync offline (ACID-7)
+        // 4. Encolar para sync offline (ACID-7). Los ítems llevan su UUID
+        // local: el INSERT remoto es idempotente ante reintentos. Sin
+        // total_cents: lo recalcula el trigger del servidor (ACID-3).
         await opQueue.enqueue(
           venueId: venueId,
           opType: PendingOpType.createOrder,
@@ -484,18 +493,20 @@ class OrderDraftController extends StateNotifier<OrderDraftState> {
             'order_id': sentOrder.id,
             'dining_table_id': state.tableId,
             'venue_id': venueId,
+            'status': sentOrder.status.toDb(),
             'opened_by': user?.id,
             'opened_at': sentOrder.openedAt.toIso8601String(),
-            'total_cents': sentOrder.totalCents,
             'items':
-                linesToCommit
+                createdItems
                     .map(
-                      (l) => {
-                        'menu_item_id': l.menuItem.id,
-                        'name_snapshot': l.menuItem.name,
-                        'price_cents_snapshot': l.menuItem.priceCents,
-                        'quantity': l.quantity,
-                        if (l.comments != null) 'comments': l.comments,
+                      (item) => {
+                        'order_item_id': item.id,
+                        'menu_item_id': item.menuItemId,
+                        'name_snapshot': item.nameSnapshot,
+                        'price_cents_snapshot': item.priceCentsSnapshot,
+                        'quantity': item.quantity,
+                        'status': item.status.toDb(),
+                        if (item.comments != null) 'comments': item.comments,
                       },
                     )
                     .toList(),

@@ -214,4 +214,14 @@ class PendingOps extends Table {
 
   /// Número de intentos de sync realizados (base del backoff exponencial).
   IntColumn get attempts => integer().withDefault(const Constant(0))();
+
+  /// Estado en la cola: 'pending' (participa del drenaje FIFO) o 'dead'
+  /// (descartada por error permanente del servidor; se conserva para
+  /// diagnóstico sin bloquear la cola — COMA-008). Default 'pending' para
+  /// que el ALTER ADD COLUMN de la migración v3→v4 sea válido sobre filas
+  /// preexistentes (SQLite exige default en columnas NOT NULL nuevas).
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+
+  /// Último error de sincronización registrado (null si nunca falló).
+  TextColumn get lastError => text().nullable()();
 }

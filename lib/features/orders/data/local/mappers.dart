@@ -171,4 +171,6 @@ PendingOp pendingOpFromRow(PendingOpRow row) => PendingOp(
   payload: row.payload,
   createdAt: row.createdAt,
   attempts: row.attempts,
+  status: PendingOpStatus.fromDb(row.status),
+  lastError: row.lastError,
 );

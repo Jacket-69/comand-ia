@@ -5,10 +5,13 @@ import 'package:equatable/equatable.dart';
 /// Los valores text usados en BD siguen el formato snake_case que documenta
 /// [offline-first.md](../../../../../docs/sync/offline-first.md).
 enum PendingOpType {
-  /// Creación de un pedido nuevo.
+  /// Creación de un pedido nuevo (incluye sus ítems iniciales).
   createOrder,
 
-  /// Actualización de un ítem dentro de un pedido.
+  /// Agregado de un ítem a un pedido existente (append mode).
+  addOrderItem,
+
+  /// Cambio de estado de un ítem existente (KDS: sent → preparing → ready).
   updateOrderItem,
 
   /// Cierre de un pedido.
@@ -20,6 +23,7 @@ enum PendingOpType {
   /// Convierte el valor de texto de la BD a [PendingOpType].
   static PendingOpType fromDb(String value) => switch (value) {
     'create_order' => PendingOpType.createOrder,
+    'add_order_item' => PendingOpType.addOrderItem,
     'update_order_item' => PendingOpType.updateOrderItem,
     'close_order' => PendingOpType.closeOrder,
     'update_order_status' => PendingOpType.updateOrderStatus,
@@ -29,9 +33,37 @@ enum PendingOpType {
   /// Convierte [PendingOpType] al texto usado en la BD.
   String toDb() => switch (this) {
     PendingOpType.createOrder => 'create_order',
+    PendingOpType.addOrderItem => 'add_order_item',
     PendingOpType.updateOrderItem => 'update_order_item',
     PendingOpType.closeOrder => 'close_order',
     PendingOpType.updateOrderStatus => 'update_order_status',
+  };
+}
+
+/// Estado de una operación en la cola de sincronización.
+///
+/// `pending` participa del drenaje FIFO. `dead` quedó descartada por un error
+/// permanente del servidor (FK inválida, invariante violado): se conserva para
+/// diagnóstico pero la cola sigue avanzando — un error permanente jamás se
+/// resuelve reintentando y bloquearía el venue completo (ACID-7 head-of-line).
+enum PendingOpStatus {
+  /// En cola, esperando sincronización.
+  pending,
+
+  /// Descartada por error permanente; conservada para diagnóstico.
+  dead;
+
+  /// Convierte el valor de texto de la BD a [PendingOpStatus].
+  static PendingOpStatus fromDb(String value) => switch (value) {
+    'pending' => PendingOpStatus.pending,
+    'dead' => PendingOpStatus.dead,
+    _ => throw ArgumentError('PendingOpStatus desconocido: $value'),
+  };
+
+  /// Convierte [PendingOpStatus] al texto usado en la BD.
+  String toDb() => switch (this) {
+    PendingOpStatus.pending => 'pending',
+    PendingOpStatus.dead => 'dead',
   };
 }
 
@@ -47,6 +79,8 @@ class PendingOp extends Equatable {
     required this.payload,
     required this.createdAt,
     required this.attempts,
+    this.status = PendingOpStatus.pending,
+    this.lastError,
   });
 
   /// ID autoincremental (orden de inserción = orden de procesamiento FIFO).
@@ -67,6 +101,13 @@ class PendingOp extends Equatable {
   /// Número de intentos de sync realizados (base del backoff exponencial).
   final int attempts;
 
+  /// Estado de la operación en la cola ([PendingOpStatus.pending] participa
+  /// del drenaje; [PendingOpStatus.dead] quedó descartada por error permanente).
+  final PendingOpStatus status;
+
+  /// Último error de sincronización registrado (null si nunca falló).
+  final String? lastError;
+
   @override
   List<Object?> get props => [
     id,
@@ -75,5 +116,7 @@ class PendingOp extends Equatable {
     payload,
     createdAt,
     attempts,
+    status,
+    lastError,
   ];
 }
