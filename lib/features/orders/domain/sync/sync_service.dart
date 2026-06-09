@@ -58,7 +58,10 @@ class SyncService {
 
   StreamSubscription<int>? _queueSub;
   StreamSubscription<bool>? _readySub;
-  bool _draining = false;
+
+  /// Drenaje en curso (null si no hay ninguno). [dispose] lo espera para no
+  /// escribir contra una base ya cerrada por el owner.
+  Future<void>? _draining;
   bool _dirty = false;
   bool _retryScheduled = false;
   bool _disposed = false;
@@ -82,19 +85,24 @@ class SyncService {
   /// Serializa los drenajes: nunca corren dos a la vez (preserva el FIFO).
   Future<void> kick() async {
     if (_disposed) return;
-    if (_draining) {
+    if (_draining != null) {
       _dirty = true;
       return;
     }
-    _draining = true;
+    final loop = _drainLoop();
+    _draining = loop;
     try {
-      do {
-        _dirty = false;
-        await _drainAll();
-      } while (_dirty && !_disposed);
+      await loop;
     } finally {
-      _draining = false;
+      _draining = null;
     }
+  }
+
+  Future<void> _drainLoop() async {
+    do {
+      _dirty = false;
+      await _drainAll();
+    } while (_dirty && !_disposed);
   }
 
   Future<void> _drainAll() async {
@@ -111,16 +119,21 @@ class SyncService {
 
     _setStatus(const SyncStatus(SyncHealth.syncing));
 
-    // La degradación se recolecta sobre TODA la pasada y el estado se deriva al
-    // cierre, en vez de mutarlo por venue: así un venue que sincroniza OK no
-    // pisa el 'degraded' de otro que sigue fallando (el banner del owner debe
-    // sobrevivir en multi-tenant). El resultado no depende del orden de
-    // venuesWithPending(), y un venue que se recupera vuelve a 'idle' solo.
+    // La degradación y el backoff se agregan sobre TODA la pasada y se aplican
+    // al cierre. El estado no se muta por venue (un venue OK no pisa el
+    // 'degraded' de otro), y el reintento usa el MENOR backoff de los venues
+    // que fallaron: así el venue con la espera más corta no queda preso del
+    // backoff del primero que falló. Independiente del orden de venuesWithPending().
     String? degradedReason;
+    Duration? nextRetry;
     for (final venueId in venues) {
       if (_disposed) return;
-      final reason = await _drainVenue(venueId);
-      if (reason != null) degradedReason = reason;
+      final outcome = await _drainVenue(venueId);
+      if (outcome.degraded != null) degradedReason = outcome.degraded;
+      if (outcome.retry != null &&
+          (nextRetry == null || outcome.retry! < nextRetry)) {
+        nextRetry = outcome.retry;
+      }
     }
     if (_disposed) return;
 
@@ -129,18 +142,21 @@ class SyncService {
           ? SyncStatus(SyncHealth.degraded, lastError: degradedReason)
           : SyncStatus.initial,
     );
+    if (nextRetry != null) _scheduleRetry(nextRetry);
   }
 
   /// Drena un venue en orden FIFO estricto (ACID-7: jamás se reordena).
   ///
-  /// Retorna el último error si el venue quedó sobre [degradedThreshold] (para
-  /// que [_drainAll] derive el estado agregado de la pasada), o null si drenó
-  /// limpio o falló por debajo del umbral. No muta el estado del servicio: la
-  /// observabilidad la decide [_drainAll] al cerrar la pasada completa.
-  Future<String?> _drainVenue(String venueId) async {
+  /// Retorna el backoff a esperar si el venue quedó bloqueado por un fallo
+  /// recuperable (head-of-line), y el último error si además superó
+  /// [degradedThreshold]. [_drainAll] agrega ambos sobre la pasada completa: no
+  /// se muta el estado ni se agenda el retry aquí.
+  Future<({Duration? retry, String? degraded})> _drainVenue(
+    String venueId,
+  ) async {
     while (!_disposed) {
       final op = await _queue.head(venueId);
-      if (op == null) return null;
+      if (op == null) return (retry: null, degraded: null);
 
       final result = await _gateway.apply(op);
       switch (result) {
@@ -174,11 +190,13 @@ class SyncService {
             tag: _tag,
           );
           // Head-of-line: este venue espera su backoff; no se salta la op.
-          _scheduleRetry(_backoffPolicy.delayFor(attempts));
-          return attempts > degradedThreshold ? reason : null;
+          return (
+            retry: _backoffPolicy.delayFor(attempts),
+            degraded: attempts > degradedThreshold ? reason : null,
+          );
       }
     }
-    return null;
+    return (retry: null, degraded: null);
   }
 
   void _scheduleRetry(Duration delay) {
@@ -201,10 +219,19 @@ class SyncService {
   }
 
   /// Detiene el servicio y libera recursos.
+  ///
+  /// Espera a que termine el drenaje en curso antes de cerrar: así ninguna
+  /// escritura a la cola corre contra una base ya cerrada por el owner (evita
+  /// excepciones async tras el teardown o el hot-restart).
   Future<void> dispose() async {
     _disposed = true;
     await _queueSub?.cancel();
     await _readySub?.cancel();
+    try {
+      await _draining;
+    } catch (_) {
+      // Un fallo del drenaje en curso no debe romper el teardown.
+    }
     await _statusController.close();
   }
 }

@@ -74,6 +74,39 @@ class _ManualWait {
   }
 }
 
+/// Gateway cuyo `apply` se bloquea hasta [releaseAll]: permite observar la
+/// serialización del drenaje y que `dispose` espere el trabajo en curso.
+class _BlockingGateway implements OrderRemoteGateway {
+  int applyCount = 0;
+  bool blocking = true;
+  final _gates = <Completer<void>>[];
+
+  @override
+  Future<bool> ensureReady() async => true;
+
+  @override
+  Stream<bool> get readyChanges => const Stream<bool>.empty();
+
+  @override
+  Future<SyncApplyResult> apply(PendingOp op) async {
+    applyCount++;
+    if (blocking) {
+      final gate = Completer<void>();
+      _gates.add(gate);
+      await gate.future;
+    }
+    return const SyncApplied();
+  }
+
+  void releaseAll() {
+    blocking = false;
+    for (final gate in _gates) {
+      if (!gate.isCompleted) gate.complete();
+    }
+    _gates.clear();
+  }
+}
+
 void main() {
   late AppDatabase db;
   late DriftPendingOpQueue queue;
@@ -361,6 +394,96 @@ void main() {
 
         expect(await queue.head('venue-A'), isNull);
         expect(service.status.health, SyncHealth.idle);
+      },
+    );
+  });
+
+  group('fairness del backoff entre venues', () {
+    test(
+      'el reintento de la pasada usa el MENOR backoff, no el del primer venue',
+      () async {
+        // venue-A ya falló mucho → backoff capeado (5 min).
+        final idA = await enqueue('venue-A', PendingOpType.createOrder);
+        for (var i = 0; i < 10; i++) {
+          await queue.markAttempt(idA);
+        }
+        // venue-B falla por primera vez → backoff 2 s.
+        await enqueue('venue-B', PendingOpType.createOrder);
+        gateway.handler = (_) => const SyncUnavailable('caído');
+
+        await service.kick();
+
+        // Un único retry con el menor delay (2 s de B): B no queda preso del
+        // backoff largo de A, sin importar el orden de venuesWithPending().
+        expect(wait.delays, contains(const Duration(seconds: 2)));
+        expect(
+          wait.delays.where((d) => d == const Duration(minutes: 5)),
+          isEmpty,
+        );
+      },
+    );
+  });
+
+  group('teardown y reentrancia', () {
+    test('dispose espera el drenaje en curso antes de cerrar', () async {
+      final blocking = _BlockingGateway();
+      final svc = SyncService(
+        queue: queue,
+        gateway: blocking,
+        reconciler: reconciler,
+        wait: wait.call,
+      );
+      await enqueue('venue-A', PendingOpType.createOrder);
+
+      final kickFuture = svc.kick();
+      await pumpEventQueue();
+      expect(blocking.applyCount, 1, reason: 'apply en curso, bloqueado');
+
+      var disposed = false;
+      final disposeFuture = svc.dispose().then((_) => disposed = true);
+      await pumpEventQueue();
+      expect(
+        disposed,
+        isFalse,
+        reason: 'dispose espera el drenaje, no cierra aún',
+      );
+
+      blocking.releaseAll();
+      await kickFuture;
+      await disposeFuture;
+      expect(disposed, isTrue);
+    });
+
+    test(
+      'un kick reentrante durante el drenaje se serializa y re-drena (dirty)',
+      () async {
+        final blocking = _BlockingGateway();
+        final svc = SyncService(
+          queue: queue,
+          gateway: blocking,
+          reconciler: reconciler,
+          wait: wait.call,
+        );
+        addTearDown(svc.dispose);
+        await enqueue('venue-A', PendingOpType.createOrder);
+
+        final k1 = svc.kick();
+        await pumpEventQueue();
+        expect(blocking.applyCount, 1);
+
+        // Llega otra op + un kick reentrante con el primero aún bloqueado.
+        await enqueue('venue-A', PendingOpType.closeOrder);
+        final k2 = svc.kick();
+        await pumpEventQueue();
+        // No arrancó un segundo drenaje en paralelo (serializado, preserva FIFO).
+        expect(blocking.applyCount, 1);
+
+        blocking.releaseAll();
+        await Future.wait([k1, k2]);
+
+        // La reentrancia (_dirty) hizo re-correr el loop y tomar la 2ª op.
+        expect(blocking.applyCount, 2);
+        expect(await queue.peek('venue-A'), isEmpty);
       },
     );
   });

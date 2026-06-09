@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT plan(7);
+SELECT plan(9);
 
 -- ── Fixture propia (aislada del seed; se revierte con ROLLBACK) ────────────
 
@@ -144,7 +144,56 @@ SELECT is(
   'compute_order_total suma los snapshots respetados (1500 + 2000)'
 );
 
--- ── 7: pedido cerrado sigue bloqueando INSERT de ítems (ACID-4 intacto) ─────
+-- ── 7: ítem legítimamente gratis (name válido + precio 0) conserva el 0 ─────
+-- El sentinel solo mira name_snapshot: con un name real, el precio 0 NO se
+-- rellena desde el menú (una cortesía/promo a $0 es un precio válido, no falta
+-- de dato).
+
+INSERT INTO order_item (
+  id, venue_id, order_id, menu_item_id,
+  name_snapshot, price_cents_snapshot, quantity
+) VALUES (
+  '01000000-0000-0000-0000-000000000004',
+  'a1000000-0000-0000-0000-000000000001',
+  'f1000000-0000-0000-0000-000000000001',
+  'd1000000-0000-0000-0000-000000000001',
+  'Cortesía de la casa',
+  0,
+  1
+);
+
+SELECT is(
+  (SELECT price_cents_snapshot FROM order_item
+   WHERE id = '01000000-0000-0000-0000-000000000004'),
+  0,
+  'INSERT con name válido y precio 0 conserva el 0 (ítem gratis, no se rellena)'
+);
+
+-- ── 8: sentinel parcial (name vacío + precio provisto) rellena AMBOS ─────────
+-- El sentinel es name_snapshot: si viene vacío, name Y precio se toman del
+-- menú; el precio provisto se ignora (contrato del trigger, fija la asimetría).
+
+INSERT INTO order_item (
+  id, venue_id, order_id, menu_item_id,
+  name_snapshot, price_cents_snapshot, quantity
+) VALUES (
+  '01000000-0000-0000-0000-000000000005',
+  'a1000000-0000-0000-0000-000000000001',
+  'f1000000-0000-0000-0000-000000000001',
+  'd1000000-0000-0000-0000-000000000001',
+  '',
+  1500,
+  1
+);
+
+SELECT is(
+  (SELECT price_cents_snapshot FROM order_item
+   WHERE id = '01000000-0000-0000-0000-000000000005'),
+  2000,
+  'INSERT con name vacío rellena name y precio desde menu_item (el precio provisto se ignora)'
+);
+
+-- ── 9: pedido cerrado sigue bloqueando INSERT de ítems (ACID-4 intacto) ─────
 
 UPDATE customer_order
 SET status = 'closed', payment_method = 'cash'
